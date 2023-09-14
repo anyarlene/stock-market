@@ -14,6 +14,7 @@ interval = '1d'  # 1d, 1m, 1wk
 
 query_string = f'https://query1.finance.yahoo.com/v7/finance/download/{vanguard_ticker}?period1={period1}&period2={period2}&interval={interval}&events=history&includeAdjustedClose=true'
 
+print(query_string)
 try:
     df = pd.read_csv(query_string)
     
