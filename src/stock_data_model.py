@@ -42,13 +42,14 @@ class YahooFinanceURL:
 
 
 class DataStorage:
-    SAVE_PATH = "../data/"  # One level up from 'scripts'
+    SAVE_PATH = "data/"  # One level up from the current directory
 
     def __init__(self, dataframe, ticker):
         self.dataframe = dataframe
         self.filename = f"{ticker.replace('.', '_')}.csv"  # Replacing . with _
 
     def save_to_csv(self):
+        print(f"Current working directory: {os.getcwd()}")  # Print the current working directory
         save_location = os.path.join(self.SAVE_PATH, self.filename)
         if not os.path.exists(self.SAVE_PATH):
             os.makedirs(self.SAVE_PATH)
