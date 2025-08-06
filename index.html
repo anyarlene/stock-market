@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ETF Analytics Dashboard</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>ETF Analytics Dashboard</h1>
+            <p class="subtitle">Track ETF price evolution with 52-week highs/lows and decrease thresholds</p>
+        </header>
+
+        <main>
+            <!-- ETF Selector -->
+            <div class="controls">
+                <div class="selector-group">
+                    <label for="etf-selector">Select ETF:</label>
+                    <select id="etf-selector">
+                        <option value="">Loading ETFs...</option>
+                    </select>
+                </div>
+                <div class="info-panel" id="etf-info">
+                    <div class="info-item">
+                        <span class="label">Name:</span>
+                        <span class="value" id="etf-name">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Ticker:</span>
+                        <span class="value" id="etf-ticker">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">ISIN:</span>
+                        <span class="value" id="etf-isin">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chart Container -->
+            <div class="chart-container">
+                <canvas id="priceChart"></canvas>
+            </div>
+
+            <!-- Metrics Panel -->
+            <div class="metrics-panel" id="metrics-panel">
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <h3>52-Week High</h3>
+                        <div class="metric-value" id="high-52week">-</div>
+                        <div class="metric-date" id="high-date">-</div>
+                    </div>
+                    <div class="metric-card">
+                        <h3>52-Week Low</h3>
+                        <div class="metric-value" id="low-52week">-</div>
+                        <div class="metric-date" id="low-date">-</div>
+                    </div>
+                </div>
+                
+                <div class="thresholds-section">
+                    <h3>Decrease Thresholds from 52-Week High</h3>
+                    <div class="thresholds-grid" id="thresholds-grid">
+                        <!-- Threshold cards will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading Indicator -->
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Loading ETF data...</p>
+            </div>
+
+            <!-- Error Message -->
+            <div class="error-message" id="error-message" style="display: none;">
+                <p>Error loading data. Please try again later.</p>
+            </div>
+        </main>
+
+        <footer>
+            <p>This is an independent open data visualization project. Data is sourced from publicly available information.</p>
+        </footer>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
