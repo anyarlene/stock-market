@@ -7,7 +7,8 @@ A comprehensive tool for ETF analytics and visualization. Track ETF prices, calc
 - **ETF Price Tracking**: Daily price updates for configured ETFs
 - **52-Week Metrics**: Track high/low points and important dates
 - **Decrease Thresholds**: Monitor 10%, 15%, 20%, 25%, and 30% decreases from 52-week high
-- **Interactive Visualization**: Web interface for data exploration (coming soon)
+- **Interactive Web Dashboard**: Chart.js visualization with ETF switching and threshold monitoring
+- **Multi-Device Access**: Local server accessible from multiple devices on same network
 - **Automated Updates**: Daily data updates via GitHub Actions
 
 ## Quick Start
@@ -38,9 +39,29 @@ python -m analytics.database.load_symbols
 
 # Fetch market data
 python -m analytics.etl.market_data_fetcher
+
+# Export data for website
+python -m analytics.etl.data_exporter
 ```
 
-### 3. Verify Data
+### 3. Launch Web Dashboard
+
+```bash
+# Navigate to website directory
+cd website
+
+# Start local server (Option A: Local only)
+python -m http.server 8000
+
+# OR start server with network access (Option B: Multi-device)
+python -m http.server 8000 --bind 0.0.0.0
+```
+
+**Access the dashboard:**
+- **Local:** http://localhost:8000
+- **Network:** http://YOUR_IP_ADDRESS:8000 (same WiFi devices)
+
+### 4. Verify Data
 
 Use DB Browser for SQLite to open `data/etf_database.db` and verify your data is loaded correctly.
 
@@ -59,7 +80,11 @@ stock-market/
 │   ├── models/                # Analytics models
 │   └── utils/                 # Utility functions
 │       └── validators.py      # Data validation
-├── website/                   # Web interface (coming soon)
+├── website/                   # Web dashboard
+│   ├── index.html             # Main dashboard page
+│   ├── css/style.css          # Dashboard styling
+│   ├── js/app.js             # Chart.js visualization
+│   └── data/                 # Generated JSON files
 ├── data/                      # Data storage
 │   ├── reference/
 │   │   └── symbols.csv        # ETF symbols configuration
@@ -110,7 +135,13 @@ Data is automatically updated daily at 22:00 UTC via GitHub Actions on weekdays.
 ### Manual Updates
 
 ```bash
+# Fetch latest market data
 python -m analytics.etl.market_data_fetcher
+
+# Export updated data for website
+python -m analytics.etl.data_exporter
+
+# Refresh your browser to see updated dashboard
 ```
 
 ## Database Schema

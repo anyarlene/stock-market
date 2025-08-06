@@ -172,7 +172,103 @@ analytics/
 │   ├── db_manager.py       # Database operations
 │   └── schema.sql          # Database schema
 ├── etl/
-│   └── market_data_fetcher.py  # Market data fetching
+│   ├── market_data_fetcher.py  # Market data fetching
+│   └── data_exporter.py        # Export data to JSON for website
 └── utils/
     └── validators.py       # Data validation utilities
+
+website/
+├── index.html              # Main dashboard page
+├── css/
+│   └── style.css          # Dashboard styling
+├── js/
+│   └── app.js            # Chart.js dashboard logic
+└── data/                 # Generated JSON data files
+    ├── symbols.json      # Available ETFs list
+    ├── etf_data.json     # Combined ETF data
+    ├── vuaa.l.json       # Vanguard S&P 500 data
+    └── cndx.l.json       # iShares NASDAQ 100 data
+```
+
+## 5. Generate Website Data
+
+Before running the website, you need to export data from the database to JSON files:
+
+```bash
+# Export ETF data to JSON files for the website
+python -m analytics.etl.data_exporter
+```
+
+**Expected output:**
+```
+Starting data export for website...
+Exporting data for Vanguard S&P 500 UCITS ETF (VUAA.L)...
+Exporting data for iShares NASDAQ 100 UCITS ETF (CNDX.L)...
+✅ Data export completed! Files created in website/data/
+   - etf_data.json (combined data)
+   - symbols.json (symbols list)
+   - vuaa.l.json
+   - cndx.l.json
+```
+
+**Verification:**
+```bash
+# Check generated files
+ls website/data/
+```
+
+## 6. Run the Website Locally
+
+### Option A: Local Access Only
+```bash
+# Navigate to website directory
+cd website
+
+# Start local server
+python -m http.server 8000
+```
+
+### Option B: Network Access (Multiple Devices)
+```bash
+# Navigate to website directory
+cd website
+
+# Start server accessible from other devices on same WiFi
+python -m http.server 8000 --bind 0.0.0.0
+```
+
+**Access URLs:**
+- **Local machine:** http://localhost:8000
+- **Other devices on same WiFi:** http://YOUR_IP_ADDRESS:8000
+  - To find your IP: `ipconfig | findstr IPv4` (Windows) or `hostname -I` (Linux/Mac)
+
+**What you'll see:**
+- ETF Analytics Dashboard with dropdown selector
+- Interactive Chart.js visualization showing:
+  - Price evolution over 3 months
+  - 52-week high/low reference lines
+  - Decrease threshold markers (10%, 15%, 20%, 25%, 30%)
+- Metrics panel with 52-week high/low values
+- Threshold cards showing target prices
+
+**To stop the server:** Press `Ctrl+C` in the terminal
+
+## Network Access Notes
+
+- **Same WiFi:** Other laptops can access via your IP address
+- **Different WiFi:** Copy the `website/` folder to the other machine and run locally
+- **Future:** Deploy to GitHub Pages for global access
+
+## Data Update Workflow
+
+For daily updates, run these commands in sequence:
+
+```bash
+# 1. Fetch latest market data
+python -m analytics.etl.market_data_fetcher
+
+# 2. Export updated data for website
+python -m analytics.etl.data_exporter
+
+# 3. Website will automatically show updated data on refresh
 ```
