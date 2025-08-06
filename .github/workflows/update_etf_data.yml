@@ -29,9 +29,20 @@ jobs:
       run: |
         python -m analytics.etl.market_data_fetcher
         
+    - name: Export data for website
+      run: |
+        python -m analytics.etl.data_exporter
+        
     - name: Commit and push if changes
       run: |
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
-        git add data/
-        git diff --quiet && git diff --staged --quiet || (git commit -m "Update market data [automated]" && git push)
+        git add data/ website/data/
+        git diff --quiet && git diff --staged --quiet || (git commit -m "Update market data and website [automated]" && git push)
+        
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/set-up-website-first-draft'
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./website
