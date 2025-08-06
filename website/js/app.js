@@ -115,9 +115,7 @@ class ETFDashboard {
         // Update thresholds
         this.updateThresholds(thresholds);
         
-        // Update last updated time
-        document.getElementById('last-updated').textContent = 
-            this.formatDateTime(lastUpdated);
+        // Note: last-updated element removed from HTML
     }
 
     updateThresholds(thresholds) {
@@ -231,68 +229,48 @@ class ETFDashboard {
             }
         });
 
-        // Create chart
-        this.chart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: datasets
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: {
-                    intersect: false,
-                    mode: 'index'
+        // Create chart with simplified configuration
+        try {
+            this.chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: datasets
                 },
-                plugins: {
-                    title: {
-                        display: true,
-                        text: `${this.currentData.symbol.name} - 3 Month Price History`,
-                        font: {
-                            size: 16,
-                            weight: 'bold'
-                        }
-                    },
-                    legend: {
-                        display: true,
-                        position: 'top'
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return `${context.dataset.label}: $${context.parsed.y.toFixed(2)}`;
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    x: {
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
                         title: {
                             display: true,
-                            text: 'Date'
+                            text: `${this.currentData.symbol.name} - 3 Month Price History`
                         },
-                        type: 'time',
-                        time: {
-                            parser: 'YYYY-MM-DD',
-                            tooltipFormat: 'MMM DD, YYYY',
-                            displayFormats: {
-                                day: 'MMM DD',
-                                week: 'MMM DD',
-                                month: 'MMM YYYY'
-                            }
+                        legend: {
+                            display: true,
+                            position: 'top'
                         }
                     },
-                    y: {
-                        title: {
-                            display: true,
-                            text: 'Price ($)'
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Date'
+                            }
                         },
-                        beginAtZero: false
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Price ($)'
+                            },
+                            beginAtZero: false
+                        }
                     }
                 }
-            }
-        });
+            });
+            console.log('Chart created successfully');
+        } catch (error) {
+            console.error('Error creating chart:', error);
+        }
     }
 
     clearData() {
@@ -303,7 +281,6 @@ class ETFDashboard {
         document.getElementById('high-date').textContent = '-';
         document.getElementById('low-52week').textContent = '-';
         document.getElementById('low-date').textContent = '-';
-        document.getElementById('last-updated').textContent = '-';
         document.getElementById('thresholds-grid').innerHTML = '';
         
         if (this.chart) {
