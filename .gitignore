@@ -57,3 +57,4 @@ site/
 # Project specific
 data/
 !data/.gitkeep
+!data/*.json
