@@ -1,7 +1,14 @@
+"""Database manager for ETF analytics."""
+
 import sqlite3
 from datetime import datetime, date
 from typing import List, Dict, Any, Optional
 import pandas as pd
+import os
+import time
+import logging
+
+logger = logging.getLogger(__name__)
 
 class DatabaseManager:
     def __init__(self, db_path: str = "data/etf_database.db"):
@@ -10,94 +17,188 @@ class DatabaseManager:
         self.conn = None
         self.cursor = None
         
+        # Create data directory if it doesn't exist
+        os.makedirs(os.path.dirname(db_path), exist_ok=True)
+        
     def connect(self):
         """Create a database connection."""
         try:
-            self.conn = sqlite3.connect(self.db_path)
-            self.cursor = self.conn.cursor()
+            if self.conn is None:
+                self.conn = sqlite3.connect(self.db_path)
+                self.cursor = self.conn.cursor()
         except sqlite3.Error as e:
             print(f"Error connecting to database: {e}")
             raise
 
     def disconnect(self):
         """Close the database connection."""
-        if self.conn:
-            self.conn.close()
+        try:
+            if self.conn:
+                self.conn.close()
+        finally:
             self.conn = None
             self.cursor = None
 
     def initialize_database(self):
         """Create database tables from schema.sql."""
         try:
-            with open('analytics/data/schema.sql', 'r') as schema_file:
+            schema_path = os.path.join(os.path.dirname(__file__), 'schema.sql')
+            with open(schema_path, 'r') as schema_file:
                 schema = schema_file.read()
                 self.connect()
                 self.conn.executescript(schema)
                 self.conn.commit()
+                print(f"Database initialized at: {os.path.abspath(self.db_path)}")
         except (sqlite3.Error, IOError) as e:
             print(f"Error initializing database: {e}")
             raise
         finally:
             self.disconnect()
 
-    def insert_etf_data(self, etf_isin: str, data: pd.DataFrame):
-        """Insert ETF price data into the database."""
+    def get_market_data_range(self, symbol_id: int, start_date: date, end_date: date) -> List[Dict[str, Any]]:
+        """Get market data for a symbol within a date range."""
+        try:
+            self.connect()
+            self.cursor.execute("""
+                SELECT date, open, high, low, close, volume
+                FROM etf_data
+                WHERE symbol_id = ?
+                AND date BETWEEN ? AND ?
+                ORDER BY date
+            """, (symbol_id, start_date, end_date))
+            
+            columns = ['date', 'open', 'high', 'low', 'close', 'volume']
+            return [dict(zip(columns, row)) for row in self.cursor.fetchall()]
+            
+        except sqlite3.Error as e:
+            logger.error(f"Error getting market data: {e}")
+            raise
+        finally:
+            self.disconnect()
+
+    def get_active_symbols(self) -> List[Dict[str, Any]]:
+        """Get all active symbols from the database."""
+        try:
+            self.connect()
+            self.cursor.execute("""
+                SELECT id, isin, ticker, name, asset_type, exchange, currency
+                FROM symbols
+                WHERE is_active = 1
+                ORDER BY name
+            """)
+            
+            columns = ['id', 'isin', 'ticker', 'name', 'asset_type', 'exchange', 'currency']
+            return [dict(zip(columns, row)) for row in self.cursor.fetchall()]
+            
+        except sqlite3.Error as e:
+            print(f"Error getting active symbols: {e}")
+            raise
+        finally:
+            self.disconnect()
+
+    def get_symbol_by_isin(self, isin: str) -> Optional[Dict[str, Any]]:
+        """Get symbol information by ISIN."""
+        try:
+            self.connect()
+            self.cursor.execute("""
+                SELECT id, isin, ticker, name, asset_type, exchange, currency, is_active
+                FROM symbols
+                WHERE isin = ?
+            """, (isin,))
+            
+            row = self.cursor.fetchone()
+            if not row:
+                return None
+                
+            return {
+                'id': row[0],
+                'isin': row[1],
+                'ticker': row[2],
+                'name': row[3],
+                'asset_type': row[4],
+                'exchange': row[5],
+                'currency': row[6],
+                'is_active': row[7]
+            }
+            
+        except sqlite3.Error as e:
+            print(f"Error getting symbol by ISIN: {e}")
+            raise
+        finally:
+            self.disconnect()
+
+    def add_symbol(self, isin: str, ticker: str, name: str, 
+                  asset_type: str, exchange: str, currency: str) -> int:
+        """Add a new symbol to the database."""
+        try:
+            self.connect()
+            self.cursor.execute("""
+                INSERT INTO symbols (isin, ticker, name, asset_type, exchange, currency)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (isin, ticker, name, asset_type, exchange, currency))
+            
+            symbol_id = self.cursor.lastrowid
+            self.conn.commit()
+            return symbol_id
+            
+        except sqlite3.Error as e:
+            print(f"Error adding symbol: {e}")
+            raise
+        finally:
+            self.disconnect()
+
+    def clear_symbols(self):
+        """Clear all symbols from the database."""
+        try:
+            self.connect()
+            self.cursor.execute("DELETE FROM symbols")
+            self.conn.commit()
+        except sqlite3.Error as e:
+            print(f"Error clearing symbols: {e}")
+            raise
+        finally:
+            self.disconnect()
+
+    def insert_market_data(self, symbol_id: int, data: pd.DataFrame):
+        """Insert market data into the database."""
         try:
             self.connect()
             for index, row in data.iterrows():
                 self.cursor.execute("""
                     INSERT OR REPLACE INTO etf_data 
-                    (etf_isin, date, open, high, low, close, volume)
+                    (symbol_id, date, open, high, low, close, volume)
                     VALUES (?, ?, ?, ?, ?, ?, ?)
                 """, (
-                    etf_isin,
+                    symbol_id,
                     index.strftime('%Y-%m-%d'),
-                    row['Open'],
-                    row['High'],
-                    row['Low'],
-                    row['Close'],
-                    row['Volume']
+                    float(row['Open']),  # Ensure float conversion
+                    float(row['High']),
+                    float(row['Low']),
+                    float(row['Close']),
+                    int(row['Volume'])   # Ensure integer conversion
                 ))
             self.conn.commit()
         except sqlite3.Error as e:
-            print(f"Error inserting ETF data: {e}")
+            print(f"Error inserting market data: {e}")
             raise
         finally:
             self.disconnect()
 
-    def update_52week_metrics(self, etf_isin: str, calculation_date: date):
-        """Calculate and update 52-week high/low metrics."""
+    def store_52week_metrics(self, symbol_id: int, calculation_date: date,
+                           high_52week: float, low_52week: float,
+                           high_date: date, low_date: date):
+        """Store 52-week metrics and calculate decrease thresholds."""
         try:
             self.connect()
             
-            # Get 52 weeks of data
-            self.cursor.execute("""
-                SELECT date, high, low
-                FROM etf_data
-                WHERE etf_isin = ?
-                AND date <= ?
-                AND date > date(?, '-52 weeks')
-                ORDER BY date DESC
-            """, (etf_isin, calculation_date, calculation_date))
-            
-            data = self.cursor.fetchall()
-            if not data:
-                return
-            
-            # Calculate 52-week high and low
-            high_52week = max(row[1] for row in data)
-            low_52week = min(row[2] for row in data)
-            high_date = next(row[0] for row in data if row[1] == high_52week)
-            low_date = next(row[0] for row in data if row[2] == low_52week)
-            
-            # Insert or update metrics
+            # Store metrics
             self.cursor.execute("""
                 INSERT OR REPLACE INTO fifty_two_week_metrics
-                (etf_isin, calculation_date, high_52week, low_52week, high_date, low_date)
+                (symbol_id, calculation_date, high_52week, low_52week, high_date, low_date)
                 VALUES (?, ?, ?, ?, ?, ?)
-            """, (etf_isin, calculation_date, high_52week, low_52week, high_date, low_date))
+            """, (symbol_id, calculation_date, high_52week, low_52week, high_date, low_date))
             
-            # Calculate and insert decrease thresholds
+            # Calculate decrease thresholds
             decreases = {
                 10: high_52week * 0.9,
                 15: high_52week * 0.85,
@@ -106,96 +207,24 @@ class DatabaseManager:
                 30: high_52week * 0.7
             }
             
+            # Store thresholds
             self.cursor.execute("""
                 INSERT OR REPLACE INTO decrease_thresholds
-                (etf_isin, calculation_date, high_52week_price, 
+                (symbol_id, calculation_date, high_52week_price, 
                 decrease_10_price, decrease_15_price, decrease_20_price,
                 decrease_25_price, decrease_30_price)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """, (
-                etf_isin, calculation_date, high_52week,
+                symbol_id, calculation_date, high_52week,
                 decreases[10], decreases[15], decreases[20],
                 decreases[25], decreases[30]
             ))
             
             self.conn.commit()
-        except sqlite3.Error as e:
-            print(f"Error updating 52-week metrics: {e}")
-            raise
-        finally:
-            self.disconnect()
-
-    def get_latest_metrics(self, etf_isin: str) -> Optional[Dict[str, Any]]:
-        """Get the latest metrics for an ETF."""
-        try:
-            self.connect()
-            
-            self.cursor.execute("""
-                SELECT 
-                    m.calculation_date,
-                    m.high_52week,
-                    m.low_52week,
-                    d.decrease_10_price,
-                    d.decrease_15_price,
-                    d.decrease_20_price,
-                    d.decrease_25_price,
-                    d.decrease_30_price,
-                    e.close as current_price
-                FROM fifty_two_week_metrics m
-                JOIN decrease_thresholds d ON m.etf_isin = d.etf_isin 
-                    AND m.calculation_date = d.calculation_date
-                JOIN etf_data e ON m.etf_isin = e.etf_isin
-                WHERE m.etf_isin = ?
-                ORDER BY m.calculation_date DESC, e.date DESC
-                LIMIT 1
-            """, (etf_isin,))
-            
-            row = self.cursor.fetchone()
-            if not row:
-                return None
-                
-            return {
-                'calculation_date': row[0],
-                'high_52week': row[1],
-                'low_52week': row[2],
-                'decrease_10_price': row[3],
-                'decrease_15_price': row[4],
-                'decrease_20_price': row[5],
-                'decrease_25_price': row[6],
-                'decrease_30_price': row[7],
-                'current_price': row[8]
-            }
+            logger.info(f"Stored metrics and thresholds for symbol {symbol_id}")
             
         except sqlite3.Error as e:
-            print(f"Error getting latest metrics: {e}")
-            raise
-        finally:
-            self.disconnect()
-
-    def get_price_history(self, etf_isin: str, start_date: Optional[date] = None) -> pd.DataFrame:
-        """Get price history for an ETF."""
-        try:
-            self.connect()
-            
-            query = """
-                SELECT date, open, high, low, close, volume
-                FROM etf_data
-                WHERE etf_isin = ?
-            """
-            params = [etf_isin]
-            
-            if start_date:
-                query += " AND date >= ?"
-                params.append(start_date)
-                
-            query += " ORDER BY date"
-            
-            df = pd.read_sql_query(query, self.conn, params=params, parse_dates=['date'])
-            df.set_index('date', inplace=True)
-            return df
-            
-        except (sqlite3.Error, pd.io.sql.DatabaseError) as e:
-            print(f"Error getting price history: {e}")
+            logger.error(f"Error storing metrics: {e}")
             raise
         finally:
             self.disconnect()

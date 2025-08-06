@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS symbols (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     isin TEXT NOT NULL UNIQUE,
     ticker TEXT NOT NULL,
-    name TEXT NOT NULL,
+    name TEXT NOT NULL UNIQUE,  -- Added UNIQUE constraint
     asset_type TEXT NOT NULL CHECK(asset_type IN ('ETF', 'STOCK')),
     exchange TEXT NOT NULL,
     currency TEXT NOT NULL,

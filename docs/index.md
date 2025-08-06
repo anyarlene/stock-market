@@ -1,51 +1,98 @@
 # ETF Analytics Documentation
 
-Welcome to the ETF Analytics documentation. This tool helps you track and visualize ETF performance with a focus on price movements and key metrics.
+Welcome to the ETF Analytics documentation. This comprehensive tool helps you track and analyze ETF performance with automated data collection and metrics calculation.
 
-## Features
+## Overview
 
-- **ETF Price Tracking**: Daily price updates for your ETFs
-- **52-Week Metrics**: Track high/low points and important thresholds
-- **Decrease Thresholds**: Monitor various decrease levels from 52-week high
-- **Interactive Visualization**: Web interface for data exploration
+The ETF Analytics system provides:
 
-## Quick Start
+- **Automated Data Collection**: Daily updates from Yahoo Finance
+- **52-Week Analysis**: Track high/low points and key dates
+- **Threshold Monitoring**: Monitor price decreases from peaks
+- **Database Storage**: Organized data storage with SQLite
+- **Validation**: Comprehensive data validation and error checking
 
-1. Installation:
-   ```bash
-   pip install -e .
-   ```
+## Getting Started
 
-2. Configure your environment:
-   ```bash
-   cp .env.example .env
-   # Edit .env with your settings
-   ```
+New to ETF Analytics? Start here:
 
-3. Initialize the database:
-   ```bash
-   python -m analytics.database.db_manager
-   ```
+1. [How to Run Scripts](how_to_run_scripts.md) - Step-by-step execution guide
+2. [Installation](user-guide/installation.md) - Setup instructions
+3. [Configuration](user-guide/configuration.md) - Customize your setup
 
-4. Run the web interface:
-   ```bash
-   python -m website.app
-   ```
+## Key Features
 
-## Project Structure
+### 📊 Data Collection
+- Fetch historical price data (OHLCV)
+- Support for multiple ETFs and stocks
+- Automated daily updates via GitHub Actions
 
-- `analytics/`: Core analytics functionality
-  - `database/`: Database management
-  - `etl/`: Data pipeline processes
-  - `models/`: Analytics calculations
-  - `utils/`: Helper utilities
-- `website/`: Web interface
-- `tests/`: Test suite
-- `docs/`: Documentation
+### 📈 Analytics
+- 52-week high/low calculations
+- Price decrease thresholds (10%, 15%, 20%, 25%, 30%)
+- Historical performance tracking
 
-## Contributing
+### 🛡️ Data Validation
+- ISIN code validation
+- Duplicate detection
+- Data consistency checks
+- Comprehensive error handling
 
-See our [Contributing Guide](development/contributing.md) for details on how to:
-- Set up your development environment
-- Run tests
-- Submit pull requests
+### 💾 Database Management
+- SQLite database with optimized schema
+- Foreign key relationships
+- Indexed queries for performance
+- Backup and recovery capabilities
+
+## Current Tracked ETFs
+
+- **Vanguard S&P 500 UCITS ETF** (VUAA.L)
+  - ISIN: IE00BFMXXD54
+  - Exchange: London Stock Exchange
+  - Currency: USD
+
+- **iShares NASDAQ 100 UCITS ETF** (CNDX.L)
+  - ISIN: IE00B53SZB19
+  - Exchange: London Stock Exchange
+  - Currency: GBP
+
+## Quick Commands
+
+```bash
+# Initialize everything from scratch
+python -m analytics.database.init_db
+python -m analytics.database.load_symbols
+python -m analytics.etl.market_data_fetcher
+
+# Update data only
+python -m analytics.etl.market_data_fetcher
+
+# Load new symbols
+python -m analytics.database.load_symbols
+```
+
+## Architecture
+
+The system is built with modern Python practices:
+
+- **Modular Design**: Separate packages for analytics and website
+- **Clean Interfaces**: Well-defined APIs between components
+- **Robust Error Handling**: Comprehensive logging and validation
+- **Scalable Structure**: Easy to add new ETFs and features
+
+## Next Steps
+
+- Explore the [Components](components/analytics.md) section to understand the system architecture
+- Check the [API Reference](api/database.md) for detailed function documentation
+- Visit [Development](development/contributing.md) to contribute to the project
+
+## Support
+
+- Review error logs for troubleshooting
+- Check data validation for common issues
+- Ensure all dependencies are properly installed
+- Use DB Browser for SQLite to inspect data
+
+---
+
+Ready to get started? Head to the [How to Run Scripts](how_to_run_scripts.md) guide!
