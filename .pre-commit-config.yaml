@@ -1,0 +1,41 @@
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+    -   id: trailing-whitespace  # Removes trailing whitespace
+    -   id: end-of-file-fixer   # Ensures files end with a newline
+    -   id: check-yaml          # Checks yaml files for syntax
+    -   id: check-added-large-files  # Prevents giant files from being committed
+    -   id: check-toml          # Checks toml files for syntax
+    -   id: debug-statements    # Checks for debugger imports and py37+ breakpoint()
+    -   id: detect-private-key  # Detects private keys
+
+-   repo: https://github.com/psf/black
+    rev: 23.9.1
+    hooks:
+    -   id: black  # Python code formatter
+        language_version: python3.10
+
+-   repo: https://github.com/pycqa/isort
+    rev: 5.12.0
+    hooks:
+    -   id: isort  # Sorts Python imports
+        args: ["--profile", "black"]  # Makes isort compatible with black
+
+-   repo: https://github.com/pycqa/flake8
+    rev: 6.1.0
+    hooks:
+    -   id: flake8  # Python linter
+        additional_dependencies: [
+            'flake8-docstrings',  # Checks docstring conventions
+            'flake8-bugbear',     # Finds likely bugs
+            'flake8-quotes',      # Checks quote consistency
+        ]
+
+-   repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.5.1
+    hooks:
+    -   id: mypy  # Type checker
+        additional_dependencies: [
+            'types-all',  # Type stubs for many popular packages
+        ]
