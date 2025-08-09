@@ -62,3 +62,6 @@ website/data/*.json
 market-env/
 venv/
 env/
+
+# Accidental files
+tatus --porcelain
