@@ -463,9 +463,9 @@ class ETFDashboard {
         }
 
         // Apply time slider filtering if active
-        if (this.timeSlider.isActive && filteredData.length > 50) {
+        if (this.timeSlider.isActive) {
             const currentIndex = this.timeSlider.currentIndex;
-            const dataWindow = 50; // Show 50 data points in the window
+            const dataWindow = Math.min(50, filteredData.length); // Show up to 50 data points or all data if less
             
             let startIndex = Math.max(0, currentIndex - Math.floor(dataWindow / 2));
             let endIndex = Math.min(filteredData.length - 1, startIndex + dataWindow);
@@ -861,22 +861,16 @@ class ETFDashboard {
         const filteredData = this.filterDataByTimeRange(this.currentData.priceData);
         if (filteredData.length === 0) return;
         
-        // Only show slider if we have more than 50 data points (indicating crowded data)
-        if (filteredData.length > 50) {
-            timeSlider.style.display = 'block';
-            this.timeSlider.isActive = true;
-            this.timeSlider.startIndex = 0;
-            this.timeSlider.endIndex = filteredData.length - 1;
-            this.timeSlider.currentIndex = filteredData.length - 1;
-            
-            // Set slider to show all data initially
-            timeSlider.value = 100;
-            this.updateTimeSliderLabels(filteredData);
-        } else {
-            // Hide slider for smaller datasets
-            timeSlider.style.display = 'none';
-            this.timeSlider.isActive = false;
-        }
+        // Always show slider regardless of data length
+        timeSlider.style.display = 'block';
+        this.timeSlider.isActive = true;
+        this.timeSlider.startIndex = 0;
+        this.timeSlider.endIndex = filteredData.length - 1;
+        this.timeSlider.currentIndex = filteredData.length - 1;
+        
+        // Set slider to show all data initially
+        timeSlider.value = 100;
+        this.updateTimeSliderLabels(filteredData);
     }
 }
 
