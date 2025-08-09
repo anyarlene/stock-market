@@ -158,8 +158,8 @@ class ETFDashboard {
         const filterSelect = document.getElementById('threshold-filter');
         const clearButton = document.getElementById('clear-filter');
         
-        if (!grid) {
-            console.error('Profit targets grid not found!');
+        if (!grid || !filterSelect || !clearButton) {
+            console.error('Required elements not found for profit targets');
             return;
         }
         
@@ -203,7 +203,10 @@ class ETFDashboard {
         const filterSelect = document.getElementById('threshold-filter');
         const clearButton = document.getElementById('clear-filter');
         
-        if (!filterSelect || !clearButton) return;
+        if (!filterSelect || !clearButton) {
+            console.error('Filter elements not found');
+            return;
+        }
         
         // Remove existing event listeners if they exist
         if (filterSelect._hasListeners) {
@@ -242,6 +245,10 @@ class ETFDashboard {
         
         // Initially disable the clear button
         clearButton.disabled = true;
+        
+        // Ensure the filter is properly initialized
+        filterSelect.value = '';
+        grid.innerHTML = '';
     }
 
     showProfitTargetsForThreshold(thresholds, selectedPercentage, grid) {

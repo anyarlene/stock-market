@@ -310,8 +310,8 @@ header h1 {
 }
 
 .profit-target-card.reached {
-    background: #f0fdf4;
-    border-color: #bbf7d0;
+    background: #f0f9ff;
+    border-color: #0284c7;
 }
 
 .profit-target-header {
@@ -326,7 +326,7 @@ header h1 {
 }
 
 .profit-target-card.reached .profit-target-percentage {
-    color: #16a34a;
+    color: #0284c7;
 }
 
 .entry-point-info {
