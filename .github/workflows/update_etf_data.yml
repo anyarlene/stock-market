@@ -1,19 +1,21 @@
-name: Fetch Market Data
+name: Deploy Website
 
 on:
+  push:
+    branches: [ main ]
   schedule:
     # Runs at 22:00 UTC (after market close) every weekday
     - cron: '0 22 * * 1-5'
   workflow_dispatch:  # Allows manual trigger of the workflow
 
 jobs:
-  fetch-data:
+  deploy:
     runs-on: ubuntu-latest
     
     steps:
     - uses: actions/checkout@v3
       with:
-        fetch-depth: 0  # This ensures we have the full git history
+        fetch-depth: 0
     
     - name: Set up Python
       uses: actions/setup-python@v4
@@ -25,24 +27,12 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         
-    - name: Fetch market data
-      run: |
-        python -m analytics.etl.market_data_fetcher
-        
-    - name: Export data for website
+    - name: Generate website data
       run: |
         python -m analytics.etl.data_exporter
         
-    - name: Commit and push if changes
-      run: |
-        git config --local user.email "github-actions[bot]@users.noreply.github.com"
-        git config --local user.name "github-actions[bot]"
-        git add data/ website/data/
-        git diff --quiet && git diff --staged --quiet || (git commit -m "Update market data and website [automated]" && git push)
-        
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3
-      if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/set-up-website-first-draft'
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: ./website
