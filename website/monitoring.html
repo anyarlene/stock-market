@@ -203,7 +203,7 @@
                 statusGrid.innerHTML = '<div class="loading"><h3>Loading...</h3></div>';
                 
                 // Try to load workflow results
-                const response = await fetch('analytics/logs/workflow_results.json');
+                const response = await fetch('../analytics/logs/workflow_results.json');
                 if (!response.ok) {
                     throw new Error('No workflow results found');
                 }

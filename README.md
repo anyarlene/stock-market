@@ -98,9 +98,8 @@ The system includes automated daily updates via GitHub Actions:
 3. **Test Manually**: Go to Actions → Daily Market Data Update → Run workflow
 
 ### **Monitoring**
-- **Dashboard**: `https://your-username.github.io/your-repo/website/monitoring.html`
 - **GitHub Actions**: Repository → Actions tab
-- **Email Alerts**: Success/failure notifications (if configured)
+- **Workflow Logs**: Check `analytics/logs/workflow_results.json` for detailed results
 
 ## 📁 Project Structure
 
