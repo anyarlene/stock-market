@@ -11,13 +11,13 @@ import logging
 logger = logging.getLogger(__name__)
 
 class DatabaseManager:
-    def __init__(self, db_path: str = "data/etf_database.db"):
+    def __init__(self, db_path: str = "analytics/database/etf_database.db"):
         """Initialize database connection and create tables if they don't exist."""
         self.db_path = db_path
         self.conn = None
         self.cursor = None
         
-        # Create data directory if it doesn't exist
+        # Create database directory if it doesn't exist
         os.makedirs(os.path.dirname(db_path), exist_ok=True)
         
     def connect(self):

@@ -44,7 +44,7 @@ python -m analytics.database.load_symbols
 ```
 
 **What it does:**
-- Reads symbols from `data/reference/symbols.csv`
+- Reads symbols from `analytics/database/reference/symbols.csv`
 - Validates ISIN codes, tickers, and other data
 - Loads symbols into the database
 - Verifies data consistency between CSV and database
@@ -135,7 +135,7 @@ ORDER BY s.name, d.calculation_date DESC;
 
 To add new ETFs or stocks:
 
-1. Edit `data/reference/symbols.csv`
+1. Edit `analytics/database/reference/symbols.csv`
 2. Add new row with: isin, ticker, name, asset_type, exchange, currency
 3. Run the load symbols script: `python -m analytics.database.load_symbols`
 4. Fetch data for new symbols: `python -m analytics.etl.market_data_fetcher`
@@ -160,17 +160,15 @@ To add new ETFs or stocks:
 ## File Structure
 
 ```
-data/
-├── reference/
-│   └── symbols.csv          # ETF/stock symbols configuration
-└── etf_database.db         # SQLite database file
-
 analytics/
 ├── database/
 │   ├── init_db.py          # Database initialization
 │   ├── load_symbols.py     # Symbol loading script
 │   ├── db_manager.py       # Database operations
-│   └── schema.sql          # Database schema
+│   ├── schema.sql          # Database schema
+│   ├── reference/
+│   │   └── symbols.csv     # ETF/stock symbols configuration
+│   └── etf_database.db     # SQLite database file
 ├── etl/
 │   ├── market_data_fetcher.py  # Market data fetching
 │   └── data_exporter.py        # Export data to JSON for website

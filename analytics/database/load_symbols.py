@@ -40,7 +40,7 @@ def load_symbols(csv_path: str = None) -> None:
     """
     if csv_path is None:
         # Default path relative to project root
-        csv_path = os.path.join('data', 'reference', 'symbols.csv')
+        csv_path = os.path.join('analytics', 'database', 'reference', 'symbols.csv')
     
     if not os.path.exists(csv_path):
         raise FileNotFoundError(f"Symbols file not found: {csv_path}")
