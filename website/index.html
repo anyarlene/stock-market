@@ -80,6 +80,18 @@
             <!-- Chart Container -->
             <div class="chart-container">
                 <canvas id="priceChart"></canvas>
+                <div class="chart-navigation">
+                    <div class="time-slider-container">
+                        <div class="slider-wrapper">
+                            <input type="range" id="time-slider" min="0" max="100" value="100" class="time-slider">
+                            <div class="slider-labels">
+                                <span class="start-date" id="start-date">-</span>
+                                <span class="current-date" id="current-date">-</span>
+                                <span class="end-date" id="end-date">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Metrics Panel -->

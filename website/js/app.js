@@ -11,6 +11,12 @@ class ETFDashboard {
             show52WeekLow: true,
             showThresholds: false
         };
+        this.timeSlider = {
+            isActive: false,
+            startIndex: 0,
+            endIndex: 0,
+            currentIndex: 0
+        };
         console.log('🚀 ETF Dashboard initialized with EUR as default currency');
         this.init();
     }
@@ -98,6 +104,7 @@ class ETFDashboard {
                 console.log(`🔄 Currency changed to: ${this.currentCurrency}`);
                 if (this.currentData) {
                     this.updateUI();
+                    this.initializeTimeSlider(); // Reinitialize time slider
                     this.createChart();
                 }
             });
@@ -110,6 +117,7 @@ class ETFDashboard {
                 console.log(`🕒 Time range changed to: ${this.currentTimeRange}`);
                 if (this.currentData) {
                     this.updateUI();
+                    this.initializeTimeSlider(); // Reinitialize time slider for new range
                     this.createChart();
                 }
             });
@@ -149,6 +157,14 @@ class ETFDashboard {
                 }
             });
         }
+        
+        // Time slider event listener
+        const timeSlider = document.getElementById('time-slider');
+        if (timeSlider) {
+            timeSlider.addEventListener('input', (e) => {
+                this.handleTimeSliderChange(e.target.value);
+            });
+        }
     }
 
     async loadETFData(ticker) {
@@ -161,6 +177,7 @@ class ETFDashboard {
             
             this.currentData = await response.json();
             this.updateUI();
+            this.initializeTimeSlider(); // Initialize time slider
             this.createChart(); // Default to EUR
         } catch (error) {
             console.error('Error loading ETF data:', error);
@@ -438,11 +455,28 @@ class ETFDashboard {
         }
 
         // Filter data based on time range
-        const filteredData = this.filterDataByTimeRange(this.currentData.priceData);
+        let filteredData = this.filterDataByTimeRange(this.currentData.priceData);
         
         if (filteredData.length === 0) {
             console.log('No data available for selected time range');
             return;
+        }
+
+        // Apply time slider filtering if active
+        if (this.timeSlider.isActive && filteredData.length > 50) {
+            const currentIndex = this.timeSlider.currentIndex;
+            const dataWindow = 50; // Show 50 data points in the window
+            
+            let startIndex = Math.max(0, currentIndex - Math.floor(dataWindow / 2));
+            let endIndex = Math.min(filteredData.length - 1, startIndex + dataWindow);
+            
+            // Adjust start index if we're near the end
+            if (endIndex === filteredData.length - 1) {
+                startIndex = Math.max(0, endIndex - dataWindow + 1);
+            }
+            
+            filteredData = filteredData.slice(startIndex, endIndex + 1);
+            console.log(`Time slider active: showing data from index ${startIndex} to ${endIndex} (${filteredData.length} points)`);
         }
 
         console.log(`Creating chart with ${filteredData.length} data points for time range: ${this.currentTimeRange}`);
@@ -658,6 +692,27 @@ class ETFDashboard {
             clearButton.disabled = true;
         }
         
+        // Reset time slider
+        const timeSlider = document.getElementById('time-slider');
+        if (timeSlider) {
+            timeSlider.value = 100;
+            timeSlider.style.display = 'none';
+        }
+        
+        // Reset time slider labels
+        const startDate = document.getElementById('start-date');
+        const currentDate = document.getElementById('current-date');
+        const endDate = document.getElementById('end-date');
+        if (startDate) startDate.textContent = '-';
+        if (currentDate) currentDate.textContent = '-';
+        if (endDate) endDate.textContent = '-';
+        
+        // Reset time slider state
+        this.timeSlider.isActive = false;
+        this.timeSlider.startIndex = 0;
+        this.timeSlider.endIndex = 0;
+        this.timeSlider.currentIndex = 0;
+        
         if (this.chart) {
             this.chart.destroy();
             this.chart = null;
@@ -681,7 +736,12 @@ class ETFDashboard {
 
     formatDate(dateString) {
         try {
-            const date = new Date(dateString);
+            let date;
+            if (dateString instanceof Date) {
+                date = dateString;
+            } else {
+                date = new Date(dateString);
+            }
             return date.toLocaleDateString('en-US', {
                 year: 'numeric',
                 month: 'short',
@@ -750,6 +810,73 @@ class ETFDashboard {
         
         // Fallback conversion (approximate)
         return value * 0.85;
+    }
+
+    handleTimeSliderChange(value) {
+        if (!this.currentData || !this.currentData.priceData) return;
+        
+        const filteredData = this.filterDataByTimeRange(this.currentData.priceData);
+        if (filteredData.length === 0) return;
+        
+        // Convert slider value (0-100) to data index
+        const totalDataPoints = filteredData.length;
+        const targetIndex = Math.floor((value / 100) * (totalDataPoints - 1));
+        
+        this.timeSlider.currentIndex = targetIndex;
+        this.updateTimeSliderLabels(filteredData);
+        this.createChart();
+    }
+    
+    updateTimeSliderLabels(filteredData) {
+        const startDate = document.getElementById('start-date');
+        const currentDate = document.getElementById('current-date');
+        const endDate = document.getElementById('end-date');
+        
+        if (!startDate || !currentDate || !endDate || filteredData.length === 0) return;
+        
+        // Update start date (beginning of filtered data)
+        const startDateValue = new Date(filteredData[0].date);
+        startDate.textContent = this.formatDate(startDateValue);
+        
+        // Update end date (end of filtered data)
+        const endDateValue = new Date(filteredData[filteredData.length - 1].date);
+        endDate.textContent = this.formatDate(endDateValue);
+        
+        // Update current date (based on slider position)
+        const currentIndex = this.timeSlider.currentIndex;
+        if (currentIndex >= 0 && currentIndex < filteredData.length) {
+            const currentDateValue = new Date(filteredData[currentIndex].date);
+            currentDate.textContent = this.formatDate(currentDateValue);
+        } else {
+            currentDate.textContent = '-';
+        }
+    }
+    
+    initializeTimeSlider() {
+        if (!this.currentData || !this.currentData.priceData) return;
+        
+        const timeSlider = document.getElementById('time-slider');
+        if (!timeSlider) return;
+        
+        const filteredData = this.filterDataByTimeRange(this.currentData.priceData);
+        if (filteredData.length === 0) return;
+        
+        // Only show slider if we have more than 50 data points (indicating crowded data)
+        if (filteredData.length > 50) {
+            timeSlider.style.display = 'block';
+            this.timeSlider.isActive = true;
+            this.timeSlider.startIndex = 0;
+            this.timeSlider.endIndex = filteredData.length - 1;
+            this.timeSlider.currentIndex = filteredData.length - 1;
+            
+            // Set slider to show all data initially
+            timeSlider.value = 100;
+            this.updateTimeSliderLabels(filteredData);
+        } else {
+            // Hide slider for smaller datasets
+            timeSlider.style.display = 'none';
+            this.timeSlider.isActive = false;
+        }
     }
 }
 
