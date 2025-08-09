@@ -34,9 +34,34 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
       
+      - name: Debug - Check project structure
+        run: |
+          echo "Current directory: $(pwd)"
+          echo "Project structure:"
+          ls -la
+          echo "Analytics directory:"
+          ls -la analytics/
+          echo "Database directory:"
+          ls -la analytics/database/
+      
+      - name: Initialize database and load symbols
+        run: |
+          echo "Initializing database..."
+          python -m analytics.database.init_db
+          echo "Loading symbols..."
+          python -m analytics.database.load_symbols
+      
+      - name: Fetch market data
+        run: |
+          echo "Fetching market data..."
+          python -m analytics.etl.market_data_fetcher
+      
       - name: Generate website data
         run: |
+          echo "Generating website data..."
           python -m analytics.etl.data_exporter
+          echo "Checking generated files:"
+          ls -la website/data/
       
       - name: Setup Pages
         uses: actions/configure-pages@v4
