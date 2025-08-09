@@ -55,11 +55,10 @@ coverage.xml
 site/
 
 # Project specific
-data/
-!data/.gitkeep
-!data/*.json
+website/data/*.json
+!website/data/.gitkeep
 
 # Virtual environments
-market/
+market-env/
 venv/
 env/
