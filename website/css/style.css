@@ -48,19 +48,22 @@ header h1 {
 /* Controls */
 .controls {
     display: flex;
-    flex-wrap: wrap;
-    gap: 2rem;
+    flex-wrap: nowrap;
+    gap: 1.5rem;
     margin-bottom: 2rem;
     padding: 1.5rem;
     background: white;
     border-radius: 10px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    align-items: flex-start;
 }
 
 .selector-group {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    min-width: 0;
+    flex-shrink: 1;
 }
 
 .selector-group label {
@@ -68,16 +71,20 @@ header h1 {
     color: #4a5568;
 }
 
-#etf-selector {
+#etf-selector, #time-filter, #currency-selector {
     padding: 0.75rem;
     border: 2px solid #e2e8f0;
     border-radius: 6px;
     font-size: 1rem;
     background: white;
-    min-width: 250px;
+    min-width: 150px;
 }
 
-#etf-selector:focus {
+#etf-selector {
+    min-width: 200px;
+}
+
+#etf-selector:focus, #time-filter:focus, #currency-selector:focus {
     outline: none;
     border-color: #667eea;
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
@@ -85,9 +92,11 @@ header h1 {
 
 .info-panel {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 1rem;
     align-items: center;
+    flex-shrink: 1;
+    min-width: 0;
 }
 
 .info-item {
@@ -502,11 +511,11 @@ footer p {
     }
     
     .info-panel {
-        justify-content: space-between;
+        flex-wrap: wrap;
+        justify-content: flex-start;
     }
     
     .chart-container {
-        height: 400px;
         padding: 1rem;
     }
     
@@ -520,12 +529,10 @@ footer p {
     
     .profit-targets-filter {
         flex-direction: column;
-        align-items: stretch;
-        gap: 0.75rem;
+        gap: 0.5rem;
     }
     
     .profit-targets-filter select {
-        min-width: auto;
         width: 100%;
     }
     
