@@ -582,7 +582,7 @@ class ETFDashboard {
                 return;
             }
             
-            this.chart = new Chart(chartCtx, {
+            const config = {
                 type: 'line',
                 data: {
                     labels: labels,
@@ -591,33 +591,107 @@ class ETFDashboard {
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
                     plugins: {
-                        title: {
-                            display: true,
-                            text: `${this.currentData.symbol.name} - Price History (${this.currentCurrency === 'EUR' ? 'EUR' : 'USD'}) - ${this.getTimeRangeDisplayName()}`
+                        tooltip: {
+                            enabled: true,
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleColor: '#ffffff',
+                            bodyColor: '#ffffff',
+                            borderColor: '#667eea',
+                            borderWidth: 1,
+                            cornerRadius: 6,
+                            displayColors: true,
+                            callbacks: {
+                                title: function(context) {
+                                    const date = new Date(context[0].label);
+                                    return date.toLocaleDateString('en-US', { 
+                                        weekday: 'short', 
+                                        year: 'numeric', 
+                                        month: 'short', 
+                                        day: 'numeric' 
+                                    });
+                                },
+                                label: function(context) {
+                                    const dataset = context.dataset;
+                                    const value = context.parsed.y;
+                                    const currency = this.currentCurrency || 'EUR';
+                                    const currencySymbol = currency === 'EUR' ? '€' : '$';
+                                    return `${dataset.label}: ${currencySymbol}${value.toFixed(2)}`;
+                                }
+                            }
                         },
                         legend: {
                             display: true,
-                            position: 'top'
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 20,
+                                font: {
+                                    size: 12
+                                }
+                            }
                         }
                     },
                     scales: {
                         x: {
-                            title: {
-                                display: true,
-                                text: 'Date'
+                            type: 'time',
+                            time: {
+                                unit: 'day',
+                                displayFormats: {
+                                    day: 'MMM dd'
+                                }
+                            },
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                maxTicksLimit: 10,
+                                font: {
+                                    size: 11
+                                }
                             }
                         },
                         y: {
-                            title: {
-                                display: true,
-                                text: `Price (${this.currentCurrency === 'EUR' ? '€' : '$'})`
+                            beginAtZero: false,
+                            grid: {
+                                color: '#e2e8f0'
                             },
-                            beginAtZero: false
+                            ticks: {
+                                callback: function(value) {
+                                    const currency = this.currentCurrency || 'EUR';
+                                    const currencySymbol = currency === 'EUR' ? '€' : '$';
+                                    return currencySymbol + value.toFixed(2);
+                                },
+                                font: {
+                                    size: 11
+                                }
+                            }
+                        }
+                    },
+                    elements: {
+                        point: {
+                            radius: 0,
+                            hoverRadius: 6,
+                            hoverBorderWidth: 2
+                        },
+                        line: {
+                            tension: 0.1
                         }
                     }
                 }
-            });
+            };
+            
+            // Store current currency reference for tooltip callbacks
+            config.options.plugins.tooltip.callbacks.label = config.options.plugins.tooltip.callbacks.label.bind(this);
+            config.options.scales.y.ticks.callback = config.options.scales.y.ticks.callback.bind(this);
+            
+            this.chart = new Chart(chartCtx, config);
             console.log('Chart created successfully');
         } catch (error) {
             console.error('Error creating chart:', error);
