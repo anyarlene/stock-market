@@ -24,22 +24,6 @@
                         <option value="">Loading ETFs...</option>
                     </select>
                 </div>
-                <div class="selector-group">
-                    <label for="time-filter">Time Range:</label>
-                    <select id="time-filter">
-                        <option value="1y">1 Year</option>
-                        <option value="2y">2 Years</option>
-                        <option value="3y">3 Years</option>
-                        <option value="all">All Time</option>
-                    </select>
-                </div>
-                <div class="selector-group">
-                    <label for="currency-selector">Currency:</label>
-                    <select id="currency-selector">
-                        <option value="EUR">EUR (€)</option>
-                        <option value="USD">USD ($)</option>
-                    </select>
-                </div>
                 <div class="info-panel" id="etf-info">
                     <div class="info-item">
                         <span class="label">Name:</span>
@@ -54,28 +38,48 @@
                         <span class="value" id="etf-isin">-</span>
                     </div>
                 </div>
+                <div class="selector-group">
+                    <label for="time-filter">Time Range:</label>
+                    <select id="time-filter">
+                        <option value="1m">1 Month</option>
+                        <option value="3m">3 Months</option>
+                        <option value="1y">1 Year</option>
+                        <option value="2y">2 Years</option>
+                        <option value="3y">3 Years</option>
+                        <option value="all">All Time</option>
+                    </select>
+                </div>
+                <div class="selector-group">
+                    <label for="currency-selector">Currency:</label>
+                    <select id="currency-selector">
+                        <option value="EUR">EUR (€)</option>
+                        <option value="USD">USD ($)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Chart Metrics Controls -->
+            <div class="chart-metrics-controls">
+                <h4>Chart Metrics:</h4>
+                <div class="chart-toggles">
+                    <label class="toggle-label">
+                        <input type="checkbox" id="show-52week-high" checked>
+                        <span>52-Week High</span>
+                    </label>
+                    <label class="toggle-label">
+                        <input type="checkbox" id="show-52week-low" checked>
+                        <span>52-Week Low</span>
+                    </label>
+                    <label class="toggle-label">
+                        <input type="checkbox" id="show-thresholds">
+                        <span>Entry Points</span>
+                    </label>
+                </div>
             </div>
 
             <!-- Chart Container -->
             <div class="chart-container">
                 <canvas id="priceChart"></canvas>
-                <div class="chart-controls">
-                    <h4>Chart Metrics:</h4>
-                    <div class="chart-toggles">
-                        <label class="toggle-label">
-                            <input type="checkbox" id="show-52week-high" checked>
-                            <span>52-Week High</span>
-                        </label>
-                        <label class="toggle-label">
-                            <input type="checkbox" id="show-52week-low" checked>
-                            <span>52-Week Low</span>
-                        </label>
-                        <label class="toggle-label">
-                            <input type="checkbox" id="show-thresholds">
-                            <span>Entry Points</span>
-                        </label>
-                    </div>
-                </div>
             </div>
 
             <!-- Metrics Panel -->

@@ -71,6 +71,7 @@ class ETFDashboard {
         }
         if (timeSelector) {
             timeSelector.value = '1y';
+            this.currentTimeRange = '1y';
             console.log('⏰ Time filter initialized with 1 year as default');
         }
         
@@ -410,7 +411,7 @@ class ETFDashboard {
         // Get the most recent price
         const latestData = this.currentData.priceData[this.currentData.priceData.length - 1];
         
-        // Return EUR price if available and requested, otherwise original price
+        // Return EUR price if available and requested
         if (currency === 'EUR' && latestData.close_eur !== null && latestData.close_eur !== undefined) {
             return latestData.close_eur;
         }
@@ -419,13 +420,21 @@ class ETFDashboard {
     }
 
     createChart() {
-        if (!this.currentData || !this.currentData.priceData) return;
+        if (!this.currentData || !this.currentData.priceData) {
+            console.log('No current data or price data available for chart');
+            return;
+        }
 
-        const ctx = document.getElementById('priceChart').getContext('2d');
-        
+        const ctx = document.getElementById('priceChart');
+        if (!ctx) {
+            console.error('Chart canvas element not found');
+            return;
+        }
+
         // Destroy existing chart if it exists
         if (this.chart) {
             this.chart.destroy();
+            this.chart = null;
         }
 
         // Filter data based on time range
@@ -436,12 +445,27 @@ class ETFDashboard {
             return;
         }
 
+        console.log(`Creating chart with ${filteredData.length} data points for time range: ${this.currentTimeRange}`);
+
         // Prepare data for Chart.js
         const labels = filteredData.map(item => item.date);
         
         // Choose price field based on currency preference
         const priceField = this.currentCurrency === 'EUR' ? 'close_eur' : 'close';
-        const prices = filteredData.map(item => item[priceField]).filter(price => price !== null && price !== undefined);
+        
+        // Check if EUR field exists in data
+        const hasEurData = filteredData.length > 0 && filteredData[0].hasOwnProperty('close_eur');
+        
+        // Use EUR field only if it exists and is requested
+        const finalPriceField = (this.currentCurrency === 'EUR' && hasEurData) ? 'close_eur' : 'close';
+        const prices = filteredData.map(item => item[finalPriceField]).filter(price => price !== null && price !== undefined);
+        
+        console.log(`Price data points: ${prices.length}, Currency: ${this.currentCurrency}, Price field: ${finalPriceField}, Has EUR data: ${hasEurData}`);
+        
+        if (prices.length === 0) {
+            console.error('No valid price data found for chart');
+            return;
+        }
         
         // Create datasets
         const datasets = [{
@@ -518,7 +542,13 @@ class ETFDashboard {
 
         // Create chart with simplified configuration
         try {
-            this.chart = new Chart(ctx, {
+            const chartCtx = ctx.getContext('2d');
+            if (!chartCtx) {
+                console.error('Could not get 2D context from canvas');
+                return;
+            }
+            
+            this.chart = new Chart(chartCtx, {
                 type: 'line',
                 data: {
                     labels: labels,
@@ -567,6 +597,12 @@ class ETFDashboard {
         let cutoffDate = new Date();
         
         switch (this.currentTimeRange) {
+            case '1m':
+                cutoffDate.setMonth(now.getMonth() - 1);
+                break;
+            case '3m':
+                cutoffDate.setMonth(now.getMonth() - 3);
+                break;
             case '1y':
                 cutoffDate.setFullYear(now.getFullYear() - 1);
                 break;
@@ -591,6 +627,8 @@ class ETFDashboard {
 
     getTimeRangeDisplayName() {
         switch (this.currentTimeRange) {
+            case '1m': return '1 Month';
+            case '3m': return '3 Months';
             case '1y': return '1 Year';
             case '2y': return '2 Years';
             case '3y': return '3 Years';
@@ -686,7 +724,7 @@ class ETFDashboard {
                     return `€${eurValue.toFixed(2)}`;
                 }
             }
-            // Fallback: use approximate conversion (0.85 for USD, 1.17 for GBP)
+            // Fallback: use approximate conversion
             const eurValue = value * 0.85; // Approximate conversion
             return `€${eurValue.toFixed(2)}`;
         }
@@ -701,7 +739,7 @@ class ETFDashboard {
 
     convertToEUR(value) {
         if (!value || !this.currentData || !this.currentData.priceData || this.currentData.priceData.length === 0) {
-            return null;
+            return value; // Return original value if no conversion possible
         }
         
         const latestData = this.currentData.priceData[this.currentData.priceData.length - 1];
@@ -710,7 +748,7 @@ class ETFDashboard {
             return value * ratio;
         }
         
-        // Fallback conversion
+        // Fallback conversion (approximate)
         return value * 0.85;
     }
 }
