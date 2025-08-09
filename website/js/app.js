@@ -5,7 +5,7 @@ class ETFDashboard {
         this.currentData = null;
         this.symbols = [];
         this.currentCurrency = 'EUR'; // Default to EUR
-        this.currentTimeRange = '1y'; // Default to 1 year
+        this.currentTimeRange = '1m'; // Default to 1 month
         this.chartMetrics = {
             show52WeekHigh: true,
             show52WeekLow: true,
@@ -17,7 +17,7 @@ class ETFDashboard {
             endIndex: 0,
             currentIndex: 0
         };
-        console.log('🚀 ETF Dashboard initialized with EUR as default currency');
+        console.log('🚀 ETF Dashboard initialized with EUR as default currency and 1 month default time range');
         this.init();
     }
 
@@ -76,9 +76,9 @@ class ETFDashboard {
             console.log('💱 Currency selector initialized with EUR as default');
         }
         if (timeSelector) {
-            timeSelector.value = '1y';
-            this.currentTimeRange = '1y';
-            console.log('⏰ Time filter initialized with 1 year as default');
+            timeSelector.value = '1m';
+            this.currentTimeRange = '1m';
+            console.log('⏰ Time filter initialized with 1 month as default');
         }
         
         selector.addEventListener('change', async (e) => {
@@ -650,7 +650,7 @@ class ETFDashboard {
                 // Return all data
                 return priceData;
             default:
-                cutoffDate.setFullYear(now.getFullYear() - 1);
+                cutoffDate.setMonth(now.getMonth() - 1);
         }
         
         return priceData.filter(item => {
@@ -667,7 +667,7 @@ class ETFDashboard {
             case '2y': return '2 Years';
             case '3y': return '3 Years';
             case 'all': return 'All Time';
-            default: return '1 Year';
+            default: return '1 Month';
         }
     }
 
