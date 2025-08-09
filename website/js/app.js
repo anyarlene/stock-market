@@ -115,6 +115,9 @@ class ETFDashboard {
         // Update thresholds
         this.updateThresholds(thresholds);
         
+        // Update profit targets
+        this.updateProfitTargets(thresholds);
+        
         // Note: last-updated element removed from HTML
     }
 
@@ -143,6 +146,144 @@ class ETFDashboard {
                 <div class="threshold-percentage">${threshold.percentage}% Drop</div>
                 <div class="threshold-price">
                     ${threshold.thresholdPrice ? `$${threshold.thresholdPrice.toFixed(2)}` : 'N/A'}
+                </div>
+            `;
+            
+            grid.appendChild(card);
+        });
+    }
+
+    updateProfitTargets(thresholds) {
+        const grid = document.getElementById('profit-targets-grid');
+        const filterSelect = document.getElementById('threshold-filter');
+        const clearButton = document.getElementById('clear-filter');
+        
+        if (!grid) {
+            console.error('Profit targets grid not found!');
+            return;
+        }
+        
+        // Clear the grid initially
+        grid.innerHTML = '';
+        
+        if (!thresholds || thresholds.length === 0) {
+            grid.innerHTML = '<p class="no-data">No entry point data available</p>';
+            return;
+        }
+        
+        // Populate the filter dropdown
+        this.populateThresholdFilter(thresholds);
+        
+        // Set up event listeners for filter
+        this.setupProfitTargetsFilter(thresholds, grid);
+        
+        // Initially show empty grid until user selects a threshold
+        grid.innerHTML = '';
+    }
+
+    populateThresholdFilter(thresholds) {
+        const filterSelect = document.getElementById('threshold-filter');
+        if (!filterSelect) return;
+        
+        // Clear existing options except the first one
+        filterSelect.innerHTML = '<option value="">Choose an entry point...</option>';
+        
+        // Add options for each threshold
+        thresholds.forEach((threshold) => {
+            if (threshold.thresholdPrice) {
+                const option = document.createElement('option');
+                option.value = threshold.percentage;
+                option.textContent = `${threshold.percentage}% Drop ($${threshold.thresholdPrice.toFixed(2)})`;
+                filterSelect.appendChild(option);
+            }
+        });
+    }
+
+    setupProfitTargetsFilter(thresholds, grid) {
+        const filterSelect = document.getElementById('threshold-filter');
+        const clearButton = document.getElementById('clear-filter');
+        
+        if (!filterSelect || !clearButton) return;
+        
+        // Remove existing event listeners if they exist
+        if (filterSelect._hasListeners) {
+            filterSelect.removeEventListener('change', filterSelect._changeHandler);
+            clearButton.removeEventListener('click', clearButton._clickHandler);
+        }
+        
+        // Filter change event
+        const changeHandler = (e) => {
+            const selectedPercentage = parseInt(e.target.value);
+            if (selectedPercentage) {
+                this.showProfitTargetsForThreshold(thresholds, selectedPercentage, grid);
+                clearButton.disabled = false;
+            } else {
+                grid.innerHTML = '';
+                clearButton.disabled = true;
+            }
+        };
+        
+        // Clear button event
+        const clickHandler = () => {
+            filterSelect.value = '';
+            grid.innerHTML = '';
+            clearButton.disabled = true;
+        };
+        
+        // Add event listeners
+        filterSelect.addEventListener('change', changeHandler);
+        clearButton.addEventListener('click', clickHandler);
+        
+        // Store references to handlers for later removal
+        filterSelect._changeHandler = changeHandler;
+        clearButton._clickHandler = clickHandler;
+        filterSelect._hasListeners = true;
+        clearButton._hasListeners = true;
+        
+        // Initially disable the clear button
+        clearButton.disabled = true;
+    }
+
+    showProfitTargetsForThreshold(thresholds, selectedPercentage, grid) {
+        // Find the selected threshold
+        const selectedThreshold = thresholds.find(t => t.percentage === selectedPercentage);
+        if (!selectedThreshold || !selectedThreshold.thresholdPrice) {
+            grid.innerHTML = '<p class="no-data">Selected entry point not found</p>';
+            return;
+        }
+        
+        // Clear the grid
+        grid.innerHTML = '';
+        
+        // Get current price for comparison
+        const currentPrice = this.getCurrentPrice();
+        
+        // Define profit target percentages
+        const profitTargets = [10, 20, 50, 100];
+        
+        // Create profit target cards for the selected threshold
+        profitTargets.forEach(profitPercent => {
+            const profitTargetPrice = selectedThreshold.thresholdPrice * (1 + profitPercent / 100);
+            
+            const card = document.createElement('div');
+            card.className = 'profit-target-card';
+            
+            // Check if profit target has been reached
+            if (currentPrice && currentPrice >= profitTargetPrice) {
+                card.classList.add('reached');
+            }
+            
+            // Create the card content
+            card.innerHTML = `
+                <div class="profit-target-header">
+                    <div class="profit-target-percentage">${profitPercent}% Profit</div>
+                    <div class="entry-point-info">from ${selectedThreshold.percentage}% Drop Entry</div>
+                </div>
+                <div class="profit-target-price">
+                    $${profitTargetPrice.toFixed(2)}
+                </div>
+                <div class="entry-point-price">
+                    Entry: $${selectedThreshold.thresholdPrice.toFixed(2)}
                 </div>
             `;
             
@@ -282,6 +423,17 @@ class ETFDashboard {
         document.getElementById('low-52week').textContent = '-';
         document.getElementById('low-date').textContent = '-';
         document.getElementById('thresholds-grid').innerHTML = '';
+        document.getElementById('profit-targets-grid').innerHTML = '';
+        
+        // Reset the profit targets filter
+        const filterSelect = document.getElementById('threshold-filter');
+        const clearButton = document.getElementById('clear-filter');
+        if (filterSelect) {
+            filterSelect.innerHTML = '<option value="">Choose an entry point...</option>';
+        }
+        if (clearButton) {
+            clearButton.disabled = true;
+        }
         
         if (this.chart) {
             this.chart.destroy();
