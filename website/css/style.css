@@ -110,19 +110,59 @@ header h1 {
     color: #1f2937;
 }
 
-/* Chart */
+/* Chart Container */
 .chart-container {
-    margin-bottom: 2rem;
-    padding: 1.5rem;
     background: white;
     border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    height: 500px;
+    position: relative;
 }
 
 #priceChart {
     width: 100% !important;
-    height: 100% !important;
+    height: 400px !important;
+    margin-bottom: 1rem;
+}
+
+/* Chart Controls */
+.chart-controls {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e2e8f0;
+}
+
+.chart-controls h4 {
+    margin-bottom: 0.75rem;
+    color: #4a5568;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.chart-toggles {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    font-size: 0.875rem;
+    color: #4a5568;
+}
+
+.toggle-label input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+.toggle-label:hover {
+    color: #667eea;
 }
 
 /* Metrics Panel */

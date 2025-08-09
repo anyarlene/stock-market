@@ -5,6 +5,12 @@ class ETFDashboard {
         this.currentData = null;
         this.symbols = [];
         this.currentCurrency = 'EUR'; // Default to EUR
+        this.currentTimeRange = '1y'; // Default to 1 year
+        this.chartMetrics = {
+            show52WeekHigh: true,
+            show52WeekLow: true,
+            showThresholds: false
+        };
         console.log('🚀 ETF Dashboard initialized with EUR as default currency');
         this.init();
     }
@@ -56,11 +62,16 @@ class ETFDashboard {
     setupEventListeners() {
         const selector = document.getElementById('etf-selector');
         const currencySelector = document.getElementById('currency-selector');
+        const timeSelector = document.getElementById('time-filter');
         
-        // Initialize currency selector with EUR as default
+        // Initialize selectors with defaults
         if (currencySelector) {
             currencySelector.value = 'EUR';
             console.log('💱 Currency selector initialized with EUR as default');
+        }
+        if (timeSelector) {
+            timeSelector.value = '1y';
+            console.log('⏰ Time filter initialized with 1 year as default');
         }
         
         selector.addEventListener('change', async (e) => {
@@ -86,7 +97,54 @@ class ETFDashboard {
                 console.log(`🔄 Currency changed to: ${this.currentCurrency}`);
                 if (this.currentData) {
                     this.updateUI();
-                    this.createChart(this.currentCurrency);
+                    this.createChart();
+                }
+            });
+        }
+        
+        // Time range toggle event listener
+        if (timeSelector) {
+            timeSelector.addEventListener('change', async (e) => {
+                this.currentTimeRange = e.target.value;
+                console.log(`🕒 Time range changed to: ${this.currentTimeRange}`);
+                if (this.currentData) {
+                    this.updateUI();
+                    this.createChart();
+                }
+            });
+        }
+        
+        // Chart metrics toggles
+        const show52WeekHigh = document.getElementById('show-52week-high');
+        const show52WeekLow = document.getElementById('show-52week-low');
+        const showThresholds = document.getElementById('show-thresholds');
+        
+        if (show52WeekHigh) {
+            show52WeekHigh.addEventListener('change', (e) => {
+                this.chartMetrics.show52WeekHigh = e.target.checked;
+                console.log(`📊 52-week high toggle: ${e.target.checked}`);
+                if (this.currentData) {
+                    this.createChart();
+                }
+            });
+        }
+        
+        if (show52WeekLow) {
+            show52WeekLow.addEventListener('change', (e) => {
+                this.chartMetrics.show52WeekLow = e.target.checked;
+                console.log(`📊 52-week low toggle: ${e.target.checked}`);
+                if (this.currentData) {
+                    this.createChart();
+                }
+            });
+        }
+        
+        if (showThresholds) {
+            showThresholds.addEventListener('change', (e) => {
+                this.chartMetrics.showThresholds = e.target.checked;
+                console.log(`📊 Thresholds toggle: ${e.target.checked}`);
+                if (this.currentData) {
+                    this.createChart();
                 }
             });
         }
@@ -102,7 +160,7 @@ class ETFDashboard {
             
             this.currentData = await response.json();
             this.updateUI();
-            this.createChart(this.currentCurrency); // Default to EUR
+            this.createChart(); // Default to EUR
         } catch (error) {
             console.error('Error loading ETF data:', error);
             throw error;
@@ -225,7 +283,14 @@ class ETFDashboard {
             if (threshold.thresholdPrice) {
                 const option = document.createElement('option');
                 option.value = threshold.percentage;
-                option.textContent = `${threshold.percentage}% Drop ($${threshold.thresholdPrice.toFixed(2)})`;
+                
+                // Convert price to current currency
+                const thresholdPrice = this.currentCurrency === 'EUR' ? 
+                    this.convertToEUR(threshold.thresholdPrice) : 
+                    threshold.thresholdPrice;
+                
+                const currencySymbol = this.currentCurrency === 'EUR' ? '€' : '$';
+                option.textContent = `${threshold.percentage}% Drop (${currencySymbol}${thresholdPrice.toFixed(2)})`;
                 filterSelect.appendChild(option);
             }
         });
@@ -353,11 +418,8 @@ class ETFDashboard {
         return latestData.close;
     }
 
-    createChart(currency = null) {
+    createChart() {
         if (!this.currentData || !this.currentData.priceData) return;
-
-        // Use current currency if none specified
-        currency = currency || this.currentCurrency;
 
         const ctx = document.getElementById('priceChart').getContext('2d');
         
@@ -366,17 +428,24 @@ class ETFDashboard {
             this.chart.destroy();
         }
 
+        // Filter data based on time range
+        const filteredData = this.filterDataByTimeRange(this.currentData.priceData);
+        
+        if (filteredData.length === 0) {
+            console.log('No data available for selected time range');
+            return;
+        }
+
         // Prepare data for Chart.js
-        const priceData = this.currentData.priceData;
-        const labels = priceData.map(item => item.date);
+        const labels = filteredData.map(item => item.date);
         
         // Choose price field based on currency preference
-        const priceField = currency === 'EUR' ? 'close_eur' : 'close';
-        const prices = priceData.map(item => item[priceField]).filter(price => price !== null && price !== undefined);
+        const priceField = this.currentCurrency === 'EUR' ? 'close_eur' : 'close';
+        const prices = filteredData.map(item => item[priceField]).filter(price => price !== null && price !== undefined);
         
         // Create datasets
         const datasets = [{
-            label: `Close Price (${currency === 'EUR' ? 'EUR' : 'Original'})`,
+            label: `Close Price (${this.currentCurrency === 'EUR' ? 'EUR' : 'USD'})`,
             data: prices,
             borderColor: '#667eea',
             backgroundColor: 'rgba(102, 126, 234, 0.1)',
@@ -385,13 +454,13 @@ class ETFDashboard {
             tension: 0.1
         }];
 
-        // Add 52-week high/low lines
+        // Add optional metrics based on user selection
         const { metrics, thresholds } = this.currentData;
         
-        if (metrics.high52week) {
-            // Convert 52-week high to current currency if needed
+        // Add 52-week high if enabled
+        if (this.chartMetrics.show52WeekHigh && metrics.high52week) {
             let high52week = metrics.high52week;
-            if (currency === 'EUR') {
+            if (this.currentCurrency === 'EUR') {
                 high52week = this.convertToEUR(metrics.high52week);
             }
             
@@ -406,10 +475,10 @@ class ETFDashboard {
             });
         }
         
-        if (metrics.low52week) {
-            // Convert 52-week low to current currency if needed
+        // Add 52-week low if enabled
+        if (this.chartMetrics.show52WeekLow && metrics.low52week) {
             let low52week = metrics.low52week;
-            if (currency === 'EUR') {
+            if (this.currentCurrency === 'EUR') {
                 low52week = this.convertToEUR(metrics.low52week);
             }
             
@@ -424,26 +493,28 @@ class ETFDashboard {
             });
         }
 
-        // Add threshold lines
-        const colors = ['#f59e0b', '#f97316', '#dc2626', '#b91c1c', '#7f1d1d'];
-        thresholds.forEach((threshold, index) => {
-            if (threshold.thresholdPrice) {
-                let thresholdPrice = threshold.thresholdPrice;
-                if (currency === 'EUR') {
-                    thresholdPrice = this.convertToEUR(threshold.thresholdPrice);
+        // Add threshold lines if enabled
+        if (this.chartMetrics.showThresholds) {
+            const colors = ['#f59e0b', '#f97316', '#dc2626', '#b91c1c', '#7f1d1d'];
+            thresholds.forEach((threshold, index) => {
+                if (threshold.thresholdPrice) {
+                    let thresholdPrice = threshold.thresholdPrice;
+                    if (this.currentCurrency === 'EUR') {
+                        thresholdPrice = this.convertToEUR(threshold.thresholdPrice);
+                    }
+                    
+                    datasets.push({
+                        label: `${threshold.percentage}% Drop`,
+                        data: new Array(labels.length).fill(thresholdPrice),
+                        borderColor: colors[index % colors.length],
+                        borderWidth: 1,
+                        borderDash: [3, 3],
+                        fill: false,
+                        pointRadius: 0
+                    });
                 }
-                
-                datasets.push({
-                    label: `${threshold.percentage}% Drop`,
-                    data: new Array(labels.length).fill(thresholdPrice),
-                    borderColor: colors[index % colors.length],
-                    borderWidth: 1,
-                    borderDash: [3, 3],
-                    fill: false,
-                    pointRadius: 0
-                });
-            }
-        });
+            });
+        }
 
         // Create chart with simplified configuration
         try {
@@ -459,7 +530,7 @@ class ETFDashboard {
                     plugins: {
                         title: {
                             display: true,
-                            text: `${this.currentData.symbol.name} - Price History (${currency === 'EUR' ? 'EUR' : 'Original Currency'})`
+                            text: `${this.currentData.symbol.name} - Price History (${this.currentCurrency === 'EUR' ? 'EUR' : 'USD'}) - ${this.getTimeRangeDisplayName()}`
                         },
                         legend: {
                             display: true,
@@ -476,7 +547,7 @@ class ETFDashboard {
                         y: {
                             title: {
                                 display: true,
-                                text: `Price (${currency === 'EUR' ? '€' : '$'})`
+                                text: `Price (${this.currentCurrency === 'EUR' ? '€' : '$'})`
                             },
                             beginAtZero: false
                         }
@@ -486,6 +557,45 @@ class ETFDashboard {
             console.log('Chart created successfully');
         } catch (error) {
             console.error('Error creating chart:', error);
+        }
+    }
+
+    filterDataByTimeRange(priceData) {
+        if (!priceData || priceData.length === 0) return [];
+        
+        const now = new Date();
+        let cutoffDate = new Date();
+        
+        switch (this.currentTimeRange) {
+            case '1y':
+                cutoffDate.setFullYear(now.getFullYear() - 1);
+                break;
+            case '2y':
+                cutoffDate.setFullYear(now.getFullYear() - 2);
+                break;
+            case '3y':
+                cutoffDate.setFullYear(now.getFullYear() - 3);
+                break;
+            case 'all':
+                // Return all data
+                return priceData;
+            default:
+                cutoffDate.setFullYear(now.getFullYear() - 1);
+        }
+        
+        return priceData.filter(item => {
+            const itemDate = new Date(item.date);
+            return itemDate >= cutoffDate;
+        });
+    }
+
+    getTimeRangeDisplayName() {
+        switch (this.currentTimeRange) {
+            case '1y': return '1 Year';
+            case '2y': return '2 Years';
+            case '3y': return '3 Years';
+            case 'all': return 'All Time';
+            default: return '1 Year';
         }
     }
 
@@ -579,6 +689,11 @@ class ETFDashboard {
             // Fallback: use approximate conversion (0.85 for USD, 1.17 for GBP)
             const eurValue = value * 0.85; // Approximate conversion
             return `€${eurValue.toFixed(2)}`;
+        }
+        
+        // For USD, return as is with $ symbol
+        if (currency === 'USD') {
+            return `$${value.toFixed(2)}`;
         }
         
         return `$${value.toFixed(2)}`;

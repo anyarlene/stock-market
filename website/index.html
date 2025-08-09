@@ -25,10 +25,19 @@
                     </select>
                 </div>
                 <div class="selector-group">
+                    <label for="time-filter">Time Range:</label>
+                    <select id="time-filter">
+                        <option value="1y">1 Year</option>
+                        <option value="2y">2 Years</option>
+                        <option value="3y">3 Years</option>
+                        <option value="all">All Time</option>
+                    </select>
+                </div>
+                <div class="selector-group">
                     <label for="currency-selector">Currency:</label>
                     <select id="currency-selector">
                         <option value="EUR">EUR (€)</option>
-                        <option value="original">Original Currency</option>
+                        <option value="USD">USD ($)</option>
                     </select>
                 </div>
                 <div class="info-panel" id="etf-info">
@@ -50,6 +59,23 @@
             <!-- Chart Container -->
             <div class="chart-container">
                 <canvas id="priceChart"></canvas>
+                <div class="chart-controls">
+                    <h4>Chart Metrics:</h4>
+                    <div class="chart-toggles">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="show-52week-high" checked>
+                            <span>52-Week High</span>
+                        </label>
+                        <label class="toggle-label">
+                            <input type="checkbox" id="show-52week-low" checked>
+                            <span>52-Week Low</span>
+                        </label>
+                        <label class="toggle-label">
+                            <input type="checkbox" id="show-thresholds">
+                            <span>Entry Points</span>
+                        </label>
+                    </div>
+                </div>
             </div>
 
             <!-- Metrics Panel -->
