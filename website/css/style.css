@@ -77,11 +77,19 @@ header h1 {
     border-radius: 6px;
     font-size: 1rem;
     background: white;
-    min-width: 150px;
+    min-width: 120px;
 }
 
 #etf-selector {
-    min-width: 200px;
+    min-width: 180px;
+}
+
+#time-filter {
+    min-width: 100px;
+}
+
+#currency-selector {
+    min-width: 100px;
 }
 
 #etf-selector:focus, #time-filter:focus, #currency-selector:focus {
@@ -93,16 +101,19 @@ header h1 {
 .info-panel {
     display: flex;
     flex-wrap: nowrap;
-    gap: 1rem;
+    gap: 1.5rem;
     align-items: center;
     flex-shrink: 1;
     min-width: 0;
+    flex: 1;
 }
 
 .info-item {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+    min-width: 0;
+    flex-shrink: 1;
 }
 
 .info-item .label {
@@ -110,12 +121,28 @@ header h1 {
     font-weight: 600;
     color: #6b7280;
     letter-spacing: 0.05em;
+    white-space: nowrap;
 }
 
 .info-item .value {
     font-size: 1rem;
     font-weight: 500;
     color: #1f2937;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Specific styling for name to ensure it fits */
+.info-item:first-child {
+    flex: 1;
+    min-width: 200px;
+}
+
+.info-item:first-child .value {
+    white-space: nowrap;
+    overflow: visible;
+    text-overflow: clip;
 }
 
 /* Chart Metrics Controls */
