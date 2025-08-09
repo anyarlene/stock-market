@@ -11,6 +11,17 @@ CREATE TABLE IF NOT EXISTS symbols (
     is_active BOOLEAN DEFAULT 1
 );
 
+-- Currency exchange rates table for historical rates
+CREATE TABLE IF NOT EXISTS currency_rates (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    from_currency TEXT NOT NULL,
+    to_currency TEXT NOT NULL,
+    rate_date DATE NOT NULL,
+    exchange_rate DECIMAL(10,6) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(from_currency, to_currency, rate_date)
+);
+
 -- ETF data table to store historical price data
 CREATE TABLE IF NOT EXISTS etf_data (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -64,5 +75,7 @@ CREATE TABLE IF NOT EXISTS decrease_thresholds (
 -- Create indices for better query performance
 CREATE INDEX IF NOT EXISTS idx_etf_data_date ON etf_data(date);
 CREATE INDEX IF NOT EXISTS idx_etf_data_symbol ON etf_data(symbol_id);
+CREATE INDEX IF NOT EXISTS idx_currency_rates_date ON currency_rates(rate_date);
+CREATE INDEX IF NOT EXISTS idx_currency_rates_pair ON currency_rates(from_currency, to_currency);
 CREATE INDEX IF NOT EXISTS idx_52week_metrics_date ON fifty_two_week_metrics(calculation_date);
 CREATE INDEX IF NOT EXISTS idx_decrease_thresholds_date ON decrease_thresholds(calculation_date);

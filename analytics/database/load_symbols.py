@@ -5,10 +5,15 @@ It loads symbols from a CSV file into the database.
 """
 
 import os
+import sys
 import pandas as pd
 from typing import List, Dict, Any
-from analytics.database.db_manager import DatabaseManager
-from analytics.utils.validators import validate_symbol_data, verify_data_consistency
+
+# Add the analytics directory to the Python path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from database.db_manager import DatabaseManager
+from utils.validators import validate_symbol_data, verify_data_consistency
 
 def check_duplicates(df: pd.DataFrame) -> List[str]:
     """Check for duplicates in the DataFrame."""

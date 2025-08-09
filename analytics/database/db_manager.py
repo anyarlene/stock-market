@@ -174,40 +174,46 @@ class DatabaseManager:
             converter = CurrencyConverter()
             self.connect()
             
+            # Convert DataFrame to list of dictionaries for batch processing
+            price_data_list = []
             for index, row in data.iterrows():
-                # Convert to EUR if needed
-                open_eur = None
-                high_eur = None
-                low_eur = None
-                close_eur = None
-                
-                if currency and currency != 'EUR':
-                    try:
-                        open_eur = converter.convert_price(float(row['Open']), currency)
-                        high_eur = converter.convert_price(float(row['High']), currency)
-                        low_eur = converter.convert_price(float(row['Low']), currency)
-                        close_eur = converter.convert_price(float(row['Close']), currency)
-                    except Exception as e:
-                        logger.warning(f"Currency conversion failed for {symbol_id} on {index.strftime('%Y-%m-%d')}: {e}")
-                
+                price_record = {
+                    'date': index.strftime('%Y-%m-%d'),
+                    'open': float(row['Open']),
+                    'high': float(row['High']),
+                    'low': float(row['Low']),
+                    'close': float(row['Close']),
+                    'volume': int(row['Volume'])
+                }
+                price_data_list.append(price_record)
+            
+            # Batch convert to EUR if needed
+            if currency and currency != 'EUR':
+                logger.info(f"Converting {len(price_data_list)} price records from {currency} to EUR")
+                price_data_list = converter.convert_price_data_batch(price_data_list, currency)
+            
+            # Insert all records
+            for price_data in price_data_list:
                 self.cursor.execute("""
                     INSERT OR REPLACE INTO etf_data 
                     (symbol_id, date, open, high, low, close, volume, open_eur, high_eur, low_eur, close_eur)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     symbol_id,
-                    index.strftime('%Y-%m-%d'),
-                    float(row['Open']),
-                    float(row['High']),
-                    float(row['Low']),
-                    float(row['Close']),
-                    int(row['Volume']),
-                    open_eur,
-                    high_eur,
-                    low_eur,
-                    close_eur
+                    price_data['date'],
+                    price_data['open'],
+                    price_data['high'],
+                    price_data['low'],
+                    price_data['close'],
+                    price_data['volume'],
+                    price_data.get('open_eur'),
+                    price_data.get('high_eur'),
+                    price_data.get('low_eur'),
+                    price_data.get('close_eur')
                 ))
+            
             self.conn.commit()
+            logger.info(f"Successfully inserted {len(price_data_list)} records for symbol {symbol_id}")
             
         except sqlite3.Error as e:
             print(f"Error inserting market data: {e}")

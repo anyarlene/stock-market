@@ -25,7 +25,11 @@ logger = logging.getLogger(__name__)
 project_root = Path(__file__).parent.parent.parent
 sys.path.append(str(project_root))
 
-from analytics.database.db_manager import DatabaseManager
+# Add the analytics directory to the Python path
+analytics_path = Path(__file__).parent.parent
+sys.path.append(str(analytics_path))
+
+from database.db_manager import DatabaseManager
 
 def fetch_market_data(ticker: str, start_date: datetime) -> Optional[pd.DataFrame]:
     """

@@ -6,11 +6,15 @@ Exports ETF data from SQLite database to JSON files for the frontend.
 
 import json
 import os
+import sys
 from datetime import datetime, timedelta
 from typing import Dict, List, Any
 import sqlite3
 
-from analytics.database.db_manager import DatabaseManager
+# Add the analytics directory to the Python path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from database.db_manager import DatabaseManager
 
 
 def export_etf_data_to_json(db: DatabaseManager, months: int = 36) -> None:
