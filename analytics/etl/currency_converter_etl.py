@@ -232,11 +232,6 @@ def main():
     print(f"📅 Started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     
     try:
-        # Add currency rates table if it doesn't exist
-        print("\n🔧 Ensuring currency_rates table exists...")
-        from database.add_currency_rates_table import add_currency_rates_table
-        add_currency_rates_table()
-        
         # Convert existing data
         print("\n💱 Converting existing market data to EUR...")
         convert_existing_data_to_eur()

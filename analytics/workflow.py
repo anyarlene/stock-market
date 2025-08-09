@@ -24,7 +24,7 @@ def run_full_workflow():
         print("\n📊 Step 1: Initializing database...")
         db = DatabaseManager()
         db.initialize_database()
-        print("✅ Database initialized")
+        print("✅ Database initialized with complete schema (including currency_rates and EUR columns)")
         
         # Step 2: Load Symbols
         print("\n📋 Step 2: Loading ETF symbols...")
