@@ -1,6 +1,6 @@
 # Setup Guide
 
-This guide will help you set up the Stock Market Analytics project from scratch.
+This guide will help you set up the Stock Market Analytics project from scratch. The project tracks ETF prices, calculates 52-week metrics, and visualizes entry points from 52-week highs.
 
 ## Prerequisites
 
@@ -134,5 +134,5 @@ LOG_LEVEL=INFO
 ## Next Steps
 
 - Read the [Script Execution Guide](how_to_run_scripts.md) for detailed script usage
-- Check the [Environment Setup Guide](environment-setup.md) for advanced configuration
 - Explore the analytics modules to understand the data processing pipeline
+- Check the [Project Overview](../../README.md) for general project information

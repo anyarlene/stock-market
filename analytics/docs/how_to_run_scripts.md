@@ -61,7 +61,7 @@ python -m analytics.etl.market_data_fetcher
 - Fetches 1 year of historical data from Yahoo Finance
 - Stores OHLCV data in the database
 - Calculates 52-week high/low metrics
-- Calculates decrease thresholds (10%, 15%, 20%, 25%, 30%)
+- Calculates entry points (10%, 15%, 20%, 25%, 30%) from 52-week high
 - Provides detailed logging of the process
 
 ## Daily Operations
@@ -117,7 +117,7 @@ JOIN symbols s ON s.id = m.symbol_id
 ORDER BY s.name, m.calculation_date DESC;
 ```
 
-### Check Decrease Thresholds
+### Check Entry Points
 ```sql
 SELECT 
     s.name,
@@ -245,7 +245,7 @@ python -m http.server 8000 --bind 0.0.0.0
 - Interactive Chart.js visualization showing:
   - Price evolution over 3 months
   - 52-week high/low reference lines
-  - Decrease threshold markers (10%, 15%, 20%, 25%, 30%)
+  - Entry point markers (10%, 15%, 20%, 25%, 30%) from 52-week high
 - Metrics panel with 52-week high/low values
 - Threshold cards showing target prices
 

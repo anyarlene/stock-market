@@ -1,6 +1,6 @@
 # Stock Market Analytics
 
-A comprehensive tool for ETF analytics and visualization. Track ETF prices, calculate 52-week metrics, and visualize price movements with decrease thresholds.
+A comprehensive tool for ETF analytics and visualization. Track ETF prices, calculate 52-week metrics, and visualize price movements with entry points from 52 week high.
 
 ## Project Overview
 
@@ -13,7 +13,7 @@ This project consists of two main components:
 
 - **ETF Price Tracking**: Daily price updates for configured ETFs
 - **52-Week Metrics**: Track high/low points and important dates
-- **Decrease Thresholds**: Monitor 10%, 15%, 20%, 25%, and 30% decreases from 52-week high
+- **Entry Points**: Monitor 10%, 15%, 20%, 25%, and 30% entry points from 52-week high
 - **Interactive Web Dashboard**: Chart.js visualization with ETF switching and threshold monitoring
 
 ## Quick Start
@@ -47,7 +47,6 @@ The system currently tracks:
 
 - [Setup Guide](analytics/docs/setup.md) - How to set up and run the project
 - [Script Execution](analytics/docs/how_to_run_scripts.md) - How to run individual scripts
-- [Environment Setup](analytics/docs/environment-setup.md) - Virtual environment configuration
 
 ## Technologies Used
 
