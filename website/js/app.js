@@ -6,6 +6,7 @@ class ETFDashboard {
         this.symbols = [];
         this.currentCurrency = 'EUR'; // Default to EUR
         this.currentTimeRange = '1m'; // Default to 1 month
+        this.nativeCurrency = 'USD'; // Will be set dynamically based on selected ETF
         this.chartMetrics = {
             show52WeekHigh: true,
             show52WeekLow: true,
@@ -63,6 +64,44 @@ class ETFDashboard {
             option.textContent = `${symbol.name} (${symbol.ticker})`;
             selector.appendChild(option);
         });
+    }
+
+    updateCurrencySelector() {
+        const currencySelector = document.getElementById('currency-selector');
+        if (!currencySelector) return;
+        
+        // Clear existing options
+        currencySelector.innerHTML = '';
+        
+        // Add native currency option
+        const nativeOption = document.createElement('option');
+        nativeOption.value = this.nativeCurrency;
+        nativeOption.textContent = `${this.nativeCurrency} (${this.getCurrencySymbol(this.nativeCurrency)})`;
+        currencySelector.appendChild(nativeOption);
+        
+        // Add EUR option
+        const eurOption = document.createElement('option');
+        eurOption.value = 'EUR';
+        eurOption.textContent = 'EUR (€)';
+        currencySelector.appendChild(eurOption);
+        
+        // Set default to EUR
+        currencySelector.value = 'EUR';
+        this.currentCurrency = 'EUR';
+        
+        console.log(`💱 Currency selector updated: ${this.nativeCurrency} and EUR options available`);
+    }
+
+    getCurrencySymbol(currency) {
+        const symbols = {
+            'USD': '$',
+            'GBP': '£',
+            'EUR': '€',
+            'CHF': 'CHF',
+            'SEK': 'kr',
+            'NOK': 'kr'
+        };
+        return symbols[currency] || currency;
     }
 
     setupEventListeners() {
@@ -182,11 +221,18 @@ class ETFDashboard {
             }
             
             this.currentData = await response.json();
+            
+            // Set native currency based on the loaded ETF data
+            this.nativeCurrency = this.currentData.symbol.nativeCurrency || 'USD';
             console.log(`✅ ETF data loaded successfully for ${ticker}:`, {
                 symbol: this.currentData.symbol,
+                nativeCurrency: this.nativeCurrency,
                 priceDataLength: this.currentData.priceData?.length || 0,
                 hasEURData: this.currentData.priceData?.[0]?.hasOwnProperty('close_eur') || false
             });
+            
+            // Update currency selector options based on native currency
+            this.updateCurrencySelector();
             
             this.updateUI();
             this.initializeTimeSlider(); // Initialize time slider
@@ -287,11 +333,11 @@ class ETFDashboard {
                 card.classList.add('reached');
             }
             
-            const currencySymbol = this.currentCurrency === 'EUR' ? '€' : '$';
+            const symbol = this.getCurrencySymbol(this.currentCurrency);
             card.innerHTML = `
                 <div class="threshold-percentage">${threshold.percentage}% Drop</div>
                 <div class="threshold-price">
-                    ${thresholdPrice ? `${currencySymbol}${thresholdPrice.toFixed(2)}` : 'N/A'}
+                    ${thresholdPrice ? `${symbol}${thresholdPrice.toFixed(2)}` : 'N/A'}
                 </div>
             `;
             
@@ -345,8 +391,8 @@ class ETFDashboard {
                     this.convertToEUR(threshold.thresholdPrice) : 
                     threshold.thresholdPrice;
                 
-                const currencySymbol = this.currentCurrency === 'EUR' ? '€' : '$';
-                option.textContent = `${threshold.percentage}% Drop (${currencySymbol}${thresholdPrice.toFixed(2)})`;
+                const symbol = this.getCurrencySymbol(this.currentCurrency);
+                option.textContent = `${threshold.percentage}% Drop (${symbol}${thresholdPrice.toFixed(2)})`;
                 filterSelect.appendChild(option);
             }
         });
@@ -438,7 +484,7 @@ class ETFDashboard {
                 card.classList.add('reached');
             }
             
-            const currencySymbol = this.currentCurrency === 'EUR' ? '€' : '$';
+            const symbol = this.getCurrencySymbol(this.currentCurrency);
             
             // Create the card content
             card.innerHTML = `
@@ -447,10 +493,10 @@ class ETFDashboard {
                     <div class="entry-point-info">from ${selectedThreshold.percentage}% Drop Entry</div>
                 </div>
                 <div class="profit-target-price">
-                    ${currencySymbol}${profitTargetPrice.toFixed(2)}
+                    ${symbol}${profitTargetPrice.toFixed(2)}
                 </div>
                 <div class="entry-point-price">
-                    Entry: ${currencySymbol}${entryPrice.toFixed(2)}
+                    Entry: ${symbol}${entryPrice.toFixed(2)}
                 </div>
             `;
             
@@ -529,12 +575,9 @@ class ETFDashboard {
         const labels = filteredData.map(item => item.date);
         
         // Choose price field based on currency preference
-        const priceField = this.currentCurrency === 'EUR' ? 'close_eur' : 'close';
-        
-        // Check if EUR field exists in data
         const hasEurData = filteredData.length > 0 && filteredData[0].hasOwnProperty('close_eur');
         
-        // Use EUR field only if it exists and is requested
+        // Use EUR field only if it exists and is requested, otherwise use original currency
         const finalPriceField = (this.currentCurrency === 'EUR' && hasEurData) ? 'close_eur' : 'close';
         const prices = filteredData.map(item => item[finalPriceField]).filter(price => price !== null && price !== undefined);
         
@@ -547,7 +590,7 @@ class ETFDashboard {
         
         // Create datasets
         const datasets = [{
-            label: `Close Price (${this.currentCurrency === 'EUR' ? 'EUR' : 'USD'})`,
+            label: `Close Price (${this.currentCurrency})`,
             data: prices,
             borderColor: '#667eea',
             backgroundColor: 'rgba(102, 126, 234, 0.1)',
@@ -704,8 +747,8 @@ class ETFDashboard {
                                     const dataset = context.dataset;
                                     const value = context.parsed.y;
                                     const currency = this.currentCurrency || 'EUR';
-                                    const currencySymbol = currency === 'EUR' ? '€' : '$';
-                                    return `${dataset.label}: ${currencySymbol}${value.toFixed(2)}`;
+                                    const symbol = this.getCurrencySymbol(currency);
+                                    return `${dataset.label}: ${symbol}${value.toFixed(2)}`;
                                 }
                             }
                         },
@@ -757,8 +800,8 @@ class ETFDashboard {
                             ticks: {
                                 callback: function(value) {
                                     const currency = this.currentCurrency || 'EUR';
-                                    const currencySymbol = currency === 'EUR' ? '€' : '$';
-                                    return currencySymbol + value.toFixed(2);
+                                    const symbol = this.getCurrencySymbol(currency);
+                                    return symbol + value.toFixed(2);
                                 },
                                 font: {
                                     size: 11
@@ -955,12 +998,9 @@ class ETFDashboard {
             return `€${eurValue.toFixed(2)}`;
         }
         
-        // For USD, return as is with $ symbol
-        if (currency === 'USD') {
-            return `$${value.toFixed(2)}`;
-        }
-        
-        return `$${value.toFixed(2)}`;
+        // For native currency, return with appropriate symbol
+        const symbol = this.getCurrencySymbol(currency);
+        return `${symbol}${value.toFixed(2)}`;
     }
 
     convertToEUR(value) {

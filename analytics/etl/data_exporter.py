@@ -63,7 +63,8 @@ def export_etf_data_to_json(db: DatabaseManager, months: int = 36) -> None:
                 "id": symbol_id,
                 "name": symbol_name,
                 "ticker": symbol_ticker,
-                "isin": symbol['isin']
+                "isin": symbol['isin'],
+                "nativeCurrency": symbol['currency']  # Add native currency information
             },
             "priceData": price_data,
             "metrics": metrics,
@@ -90,7 +91,8 @@ def export_etf_data_to_json(db: DatabaseManager, months: int = 36) -> None:
         {
             "ticker": symbol['ticker'],
             "name": symbol['name'],
-            "isin": symbol['isin']
+            "isin": symbol['isin'],
+            "nativeCurrency": symbol['currency']  # Add native currency for dynamic display
         }
         for symbol in symbols
     ]
