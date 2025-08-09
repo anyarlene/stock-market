@@ -169,19 +169,57 @@ class ETFDashboard {
 
     async loadETFData(ticker) {
         try {
+            // Try individual file first
             const filename = `${ticker.toLowerCase()}.json`;
-            const response = await fetch(`data/${filename}`);
+            const dataUrl = `data/${filename}`;
+            console.log(`📂 Loading ETF data from: ${dataUrl}`);
+            
+            const response = await fetch(dataUrl);
+            console.log(`📡 Response status: ${response.status} ${response.statusText}`);
+            
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
             }
             
             this.currentData = await response.json();
+            console.log(`✅ ETF data loaded successfully for ${ticker}:`, {
+                symbol: this.currentData.symbol,
+                priceDataLength: this.currentData.priceData?.length || 0,
+                hasEURData: this.currentData.priceData?.[0]?.hasOwnProperty('close_eur') || false
+            });
+            
             this.updateUI();
             this.initializeTimeSlider(); // Initialize time slider
             this.createChart(); // Default to EUR
         } catch (error) {
-            console.error('Error loading ETF data:', error);
-            throw error;
+            console.error('❌ Error loading individual ETF data:', error);
+            
+            // Fallback: try loading from combined data file
+            try {
+                console.log('🔄 Trying fallback: loading from combined data file...');
+                const fallbackResponse = await fetch('data/etf_data.json');
+                if (!fallbackResponse.ok) {
+                    throw new Error(`Fallback failed: ${fallbackResponse.status}`);
+                }
+                
+                const allData = await fallbackResponse.json();
+                const symbolData = allData.find(item => item.symbol.ticker === ticker);
+                
+                if (!symbolData) {
+                    throw new Error(`Symbol ${ticker} not found in combined data`);
+                }
+                
+                this.currentData = symbolData;
+                console.log(`✅ Fallback successful: loaded ${ticker} from combined data`);
+                
+                this.updateUI();
+                this.initializeTimeSlider();
+                this.createChart();
+            } catch (fallbackError) {
+                console.error('❌ Fallback also failed:', fallbackError);
+                this.showError(`Failed to load data for ${ticker}: ${error.message}`);
+                throw error;
+            }
         }
     }
 
@@ -437,16 +475,22 @@ class ETFDashboard {
     }
 
     createChart() {
+        console.log('🎨 Starting chart creation...');
+        
         if (!this.currentData || !this.currentData.priceData) {
-            console.log('No current data or price data available for chart');
+            console.error('❌ No current data or price data available for chart');
+            this.showError('No data available for chart');
             return;
         }
 
         const ctx = document.getElementById('priceChart');
         if (!ctx) {
-            console.error('Chart canvas element not found');
+            console.error('❌ Chart canvas element not found');
+            this.showError('Chart element not found');
             return;
         }
+        
+        console.log(`📊 Chart data available: ${this.currentData.priceData.length} price points`);
 
         // Destroy existing chart if it exists
         if (this.chart) {

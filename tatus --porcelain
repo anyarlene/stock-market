@@ -1,0 +1,5 @@
+[33m08b25e8[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mreview-website-design[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m add EUR rates and convert prices to EUR on website
+[33m53b81d1[m[33m ([m[1;31morigin/get-more-historical-data[m[33m, [m[1;32mget-more-historical-data[m[33m)[m extend historical data to 3 years for each ETF
+[33m3940982[m keep color blue consistent for exit price cards
+[33m75a054f[m[33m ([m[1;31morigin/fix-exit-targets-visuals[m[33m, [m[1;32mfix-exit-targets-visuals[m[33m)[m adjust profit cards color - adjust profit filter display and select options
+[33m0f7ec3b[m[33m ([m[1;31morigin/enhance-website[m[33m, [m[1;32menhance-website[m[33m)[m - add profit targets
