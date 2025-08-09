@@ -13,13 +13,13 @@ import sqlite3
 from analytics.database.db_manager import DatabaseManager
 
 
-def export_etf_data_to_json(db: DatabaseManager, months: int = 3) -> None:
+def export_etf_data_to_json(db: DatabaseManager, months: int = 36) -> None:
     """
     Export ETF data to JSON files for the website.
     
     Args:
         db: DatabaseManager instance
-        months: Number of months of data to export (default: 3)
+        months: Number of months of data to export (default: 36 for ~3 years)
     """
     # Create website data directory if it doesn't exist
     data_dir = "website/data"
@@ -28,9 +28,12 @@ def export_etf_data_to_json(db: DatabaseManager, months: int = 3) -> None:
     # Get all symbols
     symbols = db.get_active_symbols()
     
-    # Calculate date range (last N months)
+    # Calculate date range (extended historical data from 2021-12-01)
     end_date = datetime.now()
-    start_date = end_date - timedelta(days=months * 30)  # Approximate months to days
+    start_date = datetime(2021, 12, 1)  # Fixed start date: December 1, 2021
+    
+    print(f"📊 Exporting data from {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}")
+    print(f"   📅 Extended historical period: ~{((end_date - start_date).days / 30):.1f} months of data")
     
     exported_data = {}
     
@@ -39,9 +42,9 @@ def export_etf_data_to_json(db: DatabaseManager, months: int = 3) -> None:
         symbol_name = symbol['name']
         symbol_ticker = symbol['ticker']
         
-        print(f"Exporting data for {symbol_name} ({symbol_ticker})...")
+        print(f"📈 Exporting data for {symbol_name} ({symbol_ticker})...")
         
-        # Get price data for the last N months
+        # Get price data for the extended period
         price_data = get_price_data_for_period(db, symbol_id, start_date, end_date)
         
         # Get 52-week metrics
@@ -70,6 +73,8 @@ def export_etf_data_to_json(db: DatabaseManager, months: int = 3) -> None:
         symbol_file = os.path.join(data_dir, f"{symbol_ticker.lower()}.json")
         with open(symbol_file, 'w') as f:
             json.dump(chart_data, f, indent=2)
+        
+        print(f"   ✅ {symbol_ticker}: {len(price_data)} price records exported ({start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')})")
     
     # Export combined data file
     combined_file = os.path.join(data_dir, "etf_data.json")
@@ -222,7 +227,7 @@ def main():
             create_sample_data_files()
             return
         
-        export_etf_data_to_json(db, months=3)
+        export_etf_data_to_json(db, months=36)
         print("✅ Data export completed successfully!")
     except Exception as e:
         print(f"❌ Error during data export: {e}")

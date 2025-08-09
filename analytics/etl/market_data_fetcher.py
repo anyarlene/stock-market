@@ -39,13 +39,24 @@ def fetch_market_data(ticker: str, start_date: datetime) -> Optional[pd.DataFram
         DataFrame with OHLCV data or None if fetch fails
     """
     try:
-        logger.info(f"Fetching data for {ticker} from {start_date}")
+        logger.info(f"Fetching data for {ticker} from {start_date.strftime('%Y-%m-%d')}")
         symbol = yf.Ticker(ticker)
         df = symbol.history(start=start_date)
         
         if df.empty:
             logger.warning(f"No data found for {ticker}")
             return None
+        
+        # Log the actual date range we got
+        if not df.empty:
+            first_date = df.index[0].strftime('%Y-%m-%d')
+            last_date = df.index[-1].strftime('%Y-%m-%d')
+            logger.info(f"📅 Data range for {ticker}: {first_date} to {last_date} ({len(df)} records)")
+            
+            # Check if we're missing the expected start date
+            if first_date > start_date.strftime('%Y-%m-%d'):
+                logger.warning(f"⚠️  First available data for {ticker} is {first_date}, expected from {start_date.strftime('%Y-%m-%d')}")
+                logger.info(f"   This might be due to weekends, holidays, or market closures")
             
         logger.info(f"Successfully fetched {len(df)} records for {ticker}")
         return df
@@ -129,9 +140,16 @@ def main():
         # Initialize database
         db = DatabaseManager()
         
-        # Calculate start date (1 year ago from today)
-        start_date = datetime.now() - timedelta(days=365)
-        logger.info(f"Fetching data from {start_date}")
+        # Calculate start date (December 1, 2021)
+        start_date = datetime(2021, 12, 1)
+        logger.info(f"🎯 Target start date: {start_date.strftime('%Y-%m-%d')} (Extended historical data)")
+        logger.info(f"   📅 Date breakdown:")
+        logger.info(f"      • 2021-12-01: Wednesday - FIRST TRADING DAY of extended period")
+        logger.info(f"      • 2022-01-01: Saturday (New Year's Day) - Markets CLOSED")
+        logger.info(f"      • 2022-01-02: Sunday - Markets CLOSED")
+        logger.info(f"      • 2022-01-03: Monday (New Year's Day Observed) - Markets CLOSED")
+        logger.info(f"      • 2022-01-04: Tuesday - First trading day of 2022")
+        logger.info(f"   ✅ Extended historical period: 2021-12-01 to present")
         
         # Get active symbols from database
         symbols = get_active_symbols(db)
@@ -140,7 +158,7 @@ def main():
             return
         
         for symbol in symbols:
-            logger.info(f"Processing {symbol['name']} ({symbol['ticker']})")
+            logger.info(f"\n📊 Processing {symbol['name']} ({symbol['ticker']})")
             
             # Fetch data
             df = fetch_market_data(symbol['ticker'], start_date)
@@ -150,7 +168,7 @@ def main():
             # Insert data into database
             try:
                 db.insert_market_data(symbol['id'], df)
-                logger.info(f"Successfully inserted market data for {symbol['name']}")
+                logger.info(f"✅ Successfully inserted {len(df)} records of market data for {symbol['name']}")
                 
                 # Calculate and store metrics
                 calculate_and_store_metrics(db, symbol['id'], symbol['name'])
@@ -159,7 +177,8 @@ def main():
                 logger.error(f"Error processing data for {symbol['name']}: {e}")
                 continue
         
-        logger.info("Market data fetch and metrics calculation completed")
+        logger.info("\n🎉 Market data fetch and metrics calculation completed")
+        logger.info("   💡 Extended historical data from 2021-12-01 provides richer analysis")
         
     except Exception as e:
         logger.error(f"Error in main execution: {e}")
