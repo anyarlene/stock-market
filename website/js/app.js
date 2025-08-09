@@ -609,13 +609,52 @@ class ETFDashboard {
                             displayColors: true,
                             callbacks: {
                                 title: function(context) {
-                                    const date = new Date(context[0].label);
-                                    return date.toLocaleDateString('en-US', { 
-                                        weekday: 'short', 
-                                        year: 'numeric', 
-                                        month: 'short', 
-                                        day: 'numeric' 
-                                    });
+                                    try {
+                                        const dateString = context[0].label;
+                                        console.log('Tooltip date string:', dateString, 'Type:', typeof dateString);
+                                        
+                                        let date;
+                                        
+                                        // Handle different date formats
+                                        if (typeof dateString === 'string') {
+                                            // Try parsing as ISO string first
+                                            date = new Date(dateString);
+                                            
+                                            // Check if date is valid
+                                            if (isNaN(date.getTime())) {
+                                                console.log('Invalid date, trying alternative parsing');
+                                                // Try parsing as different format (YYYY-MM-DD)
+                                                const parts = dateString.split('-');
+                                                if (parts.length === 3) {
+                                                    date = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+                                                } else {
+                                                    // Fallback to current date
+                                                    date = new Date();
+                                                }
+                                            }
+                                        } else if (dateString instanceof Date) {
+                                            date = dateString;
+                                        } else {
+                                            console.log('Unknown date format, using current date');
+                                            date = new Date();
+                                        }
+                                        
+                                        console.log('Parsed date:', date);
+                                        
+                                        // Format the date
+                                        const formattedDate = date.toLocaleDateString('en-US', { 
+                                            weekday: 'short', 
+                                            year: 'numeric', 
+                                            month: 'short', 
+                                            day: 'numeric' 
+                                        });
+                                        
+                                        console.log('Formatted date:', formattedDate);
+                                        return formattedDate;
+                                    } catch (error) {
+                                        console.error('Error formatting tooltip date:', error);
+                                        return 'Date unavailable';
+                                    }
                                 },
                                 label: function(context) {
                                     const dataset = context.dataset;
@@ -640,13 +679,7 @@ class ETFDashboard {
                     },
                     scales: {
                         x: {
-                            type: 'time',
-                            time: {
-                                unit: 'day',
-                                displayFormats: {
-                                    day: 'MMM dd'
-                                }
-                            },
+                            type: 'category',
                             grid: {
                                 display: false
                             },
@@ -654,6 +687,21 @@ class ETFDashboard {
                                 maxTicksLimit: 10,
                                 font: {
                                     size: 11
+                                },
+                                callback: function(value, index, values) {
+                                    try {
+                                        const dateString = this.getLabelForValue(value);
+                                        const date = new Date(dateString);
+                                        if (!isNaN(date.getTime())) {
+                                            return date.toLocaleDateString('en-US', {
+                                                month: 'short',
+                                                day: 'numeric'
+                                            });
+                                        }
+                                        return dateString;
+                                    } catch (error) {
+                                        return this.getLabelForValue(value);
+                                    }
                                 }
                             }
                         },
