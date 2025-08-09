@@ -5,6 +5,7 @@ class ETFDashboard {
         this.currentData = null;
         this.symbols = [];
         this.currentCurrency = 'EUR'; // Default to EUR
+        console.log('🚀 ETF Dashboard initialized with EUR as default currency');
         this.init();
     }
 
@@ -56,6 +57,12 @@ class ETFDashboard {
         const selector = document.getElementById('etf-selector');
         const currencySelector = document.getElementById('currency-selector');
         
+        // Initialize currency selector with EUR as default
+        if (currencySelector) {
+            currencySelector.value = 'EUR';
+            console.log('💱 Currency selector initialized with EUR as default');
+        }
+        
         selector.addEventListener('change', async (e) => {
             const ticker = e.target.value;
             if (ticker) {
@@ -73,13 +80,16 @@ class ETFDashboard {
         });
         
         // Currency toggle event listener
-        currencySelector.addEventListener('change', (e) => {
-            this.currentCurrency = e.target.value;
-            if (this.currentData) {
-                this.updateUI();
-                this.createChart(this.currentCurrency);
-            }
-        });
+        if (currencySelector) {
+            currencySelector.addEventListener('change', (e) => {
+                this.currentCurrency = e.target.value;
+                console.log(`🔄 Currency changed to: ${this.currentCurrency}`);
+                if (this.currentData) {
+                    this.updateUI();
+                    this.createChart(this.currentCurrency);
+                }
+            });
+        }
     }
 
     async loadETFData(ticker) {
@@ -104,6 +114,8 @@ class ETFDashboard {
 
         const { symbol, metrics, thresholds, lastUpdated } = this.currentData;
         
+        console.log(`🔄 Updating UI with currency: ${this.currentCurrency}`);
+        
         // Update ETF info
         document.getElementById('etf-name').textContent = symbol.name;
         document.getElementById('etf-ticker').textContent = symbol.ticker;
@@ -115,6 +127,7 @@ class ETFDashboard {
             document.getElementById('high-52week').textContent = highPrice;
             document.getElementById('high-date').textContent = 
                 metrics.highDate ? this.formatDate(metrics.highDate) : 'N/A';
+            console.log(`📊 52-week high: ${highPrice} (${this.currentCurrency})`);
         }
         
         if (metrics.low52week !== undefined) {
@@ -122,6 +135,7 @@ class ETFDashboard {
             document.getElementById('low-52week').textContent = lowPrice;
             document.getElementById('low-date').textContent = 
                 metrics.lowDate ? this.formatDate(metrics.lowDate) : 'N/A';
+            console.log(`📊 52-week low: ${lowPrice} (${this.currentCurrency})`);
         }
         
         // Update thresholds
