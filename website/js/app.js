@@ -4,6 +4,7 @@ class ETFDashboard {
         this.chart = null;
         this.currentData = null;
         this.symbols = [];
+        this.currentCurrency = 'EUR'; // Default to EUR
         this.init();
     }
 
@@ -53,6 +54,8 @@ class ETFDashboard {
 
     setupEventListeners() {
         const selector = document.getElementById('etf-selector');
+        const currencySelector = document.getElementById('currency-selector');
+        
         selector.addEventListener('change', async (e) => {
             const ticker = e.target.value;
             if (ticker) {
@@ -68,6 +71,15 @@ class ETFDashboard {
                 this.clearData();
             }
         });
+        
+        // Currency toggle event listener
+        currencySelector.addEventListener('change', (e) => {
+            this.currentCurrency = e.target.value;
+            if (this.currentData) {
+                this.updateUI();
+                this.createChart(this.currentCurrency);
+            }
+        });
     }
 
     async loadETFData(ticker) {
@@ -80,7 +92,7 @@ class ETFDashboard {
             
             this.currentData = await response.json();
             this.updateUI();
-            this.createChart();
+            this.createChart(this.currentCurrency); // Default to EUR
         } catch (error) {
             console.error('Error loading ETF data:', error);
             throw error;
@@ -97,17 +109,17 @@ class ETFDashboard {
         document.getElementById('etf-ticker').textContent = symbol.ticker;
         document.getElementById('etf-isin').textContent = symbol.isin;
         
-        // Update 52-week metrics
+        // Update 52-week metrics (use EUR if available)
         if (metrics.high52week !== undefined) {
-            document.getElementById('high-52week').textContent = 
-                metrics.high52week ? `$${metrics.high52week.toFixed(2)}` : 'N/A';
+            const highPrice = this.formatCurrency(metrics.high52week, this.currentCurrency);
+            document.getElementById('high-52week').textContent = highPrice;
             document.getElementById('high-date').textContent = 
                 metrics.highDate ? this.formatDate(metrics.highDate) : 'N/A';
         }
         
         if (metrics.low52week !== undefined) {
-            document.getElementById('low-52week').textContent = 
-                metrics.low52week ? `$${metrics.low52week.toFixed(2)}` : 'N/A';
+            const lowPrice = this.formatCurrency(metrics.low52week, this.currentCurrency);
+            document.getElementById('low-52week').textContent = lowPrice;
             document.getElementById('low-date').textContent = 
                 metrics.lowDate ? this.formatDate(metrics.lowDate) : 'N/A';
         }
@@ -131,21 +143,27 @@ class ETFDashboard {
         }
         
         // Get current price for comparison
-        const currentPrice = this.getCurrentPrice();
+        const currentPrice = this.getCurrentPrice(this.currentCurrency);
         
         thresholds.forEach(threshold => {
             const card = document.createElement('div');
             card.className = 'threshold-card';
             
+            // Convert threshold price to current currency
+            const thresholdPrice = this.currentCurrency === 'EUR' ? 
+                this.convertToEUR(threshold.thresholdPrice) : 
+                threshold.thresholdPrice;
+            
             // Check if threshold has been reached
-            if (currentPrice && threshold.thresholdPrice && currentPrice <= threshold.thresholdPrice) {
+            if (currentPrice && thresholdPrice && currentPrice <= thresholdPrice) {
                 card.classList.add('reached');
             }
             
+            const currencySymbol = this.currentCurrency === 'EUR' ? '€' : '$';
             card.innerHTML = `
                 <div class="threshold-percentage">${threshold.percentage}% Drop</div>
                 <div class="threshold-price">
-                    ${threshold.thresholdPrice ? `$${threshold.thresholdPrice.toFixed(2)}` : 'N/A'}
+                    ${thresholdPrice ? `${currencySymbol}${thresholdPrice.toFixed(2)}` : 'N/A'}
                 </div>
             `;
             
@@ -263,14 +281,19 @@ class ETFDashboard {
         grid.innerHTML = '';
         
         // Get current price for comparison
-        const currentPrice = this.getCurrentPrice();
+        const currentPrice = this.getCurrentPrice(this.currentCurrency);
         
         // Define profit target percentages
         const profitTargets = [10, 20, 50, 100];
         
+        // Convert threshold price to current currency
+        const entryPrice = this.currentCurrency === 'EUR' ? 
+            this.convertToEUR(selectedThreshold.thresholdPrice) : 
+            selectedThreshold.thresholdPrice;
+        
         // Create profit target cards for the selected threshold
         profitTargets.forEach(profitPercent => {
-            const profitTargetPrice = selectedThreshold.thresholdPrice * (1 + profitPercent / 100);
+            const profitTargetPrice = entryPrice * (1 + profitPercent / 100);
             
             const card = document.createElement('div');
             card.className = 'profit-target-card';
@@ -280,6 +303,8 @@ class ETFDashboard {
                 card.classList.add('reached');
             }
             
+            const currencySymbol = this.currentCurrency === 'EUR' ? '€' : '$';
+            
             // Create the card content
             card.innerHTML = `
                 <div class="profit-target-header">
@@ -287,10 +312,10 @@ class ETFDashboard {
                     <div class="entry-point-info">from ${selectedThreshold.percentage}% Drop Entry</div>
                 </div>
                 <div class="profit-target-price">
-                    $${profitTargetPrice.toFixed(2)}
+                    ${currencySymbol}${profitTargetPrice.toFixed(2)}
                 </div>
                 <div class="entry-point-price">
-                    Entry: $${selectedThreshold.thresholdPrice.toFixed(2)}
+                    Entry: ${currencySymbol}${entryPrice.toFixed(2)}
                 </div>
             `;
             
@@ -298,18 +323,27 @@ class ETFDashboard {
         });
     }
 
-    getCurrentPrice() {
+    getCurrentPrice(currency = 'original') {
         if (!this.currentData || !this.currentData.priceData || this.currentData.priceData.length === 0) {
             return null;
         }
         
         // Get the most recent price
         const latestData = this.currentData.priceData[this.currentData.priceData.length - 1];
+        
+        // Return EUR price if available and requested, otherwise original price
+        if (currency === 'EUR' && latestData.close_eur !== null && latestData.close_eur !== undefined) {
+            return latestData.close_eur;
+        }
+        
         return latestData.close;
     }
 
-    createChart() {
+    createChart(currency = null) {
         if (!this.currentData || !this.currentData.priceData) return;
+
+        // Use current currency if none specified
+        currency = currency || this.currentCurrency;
 
         const ctx = document.getElementById('priceChart').getContext('2d');
         
@@ -321,11 +355,14 @@ class ETFDashboard {
         // Prepare data for Chart.js
         const priceData = this.currentData.priceData;
         const labels = priceData.map(item => item.date);
-        const prices = priceData.map(item => item.close);
+        
+        // Choose price field based on currency preference
+        const priceField = currency === 'EUR' ? 'close_eur' : 'close';
+        const prices = priceData.map(item => item[priceField]).filter(price => price !== null && price !== undefined);
         
         // Create datasets
         const datasets = [{
-            label: 'Close Price',
+            label: `Close Price (${currency === 'EUR' ? 'EUR' : 'Original'})`,
             data: prices,
             borderColor: '#667eea',
             backgroundColor: 'rgba(102, 126, 234, 0.1)',
@@ -338,9 +375,15 @@ class ETFDashboard {
         const { metrics, thresholds } = this.currentData;
         
         if (metrics.high52week) {
+            // Convert 52-week high to current currency if needed
+            let high52week = metrics.high52week;
+            if (currency === 'EUR') {
+                high52week = this.convertToEUR(metrics.high52week);
+            }
+            
             datasets.push({
                 label: '52-Week High',
-                data: new Array(labels.length).fill(metrics.high52week),
+                data: new Array(labels.length).fill(high52week),
                 borderColor: '#10b981',
                 borderWidth: 2,
                 borderDash: [5, 5],
@@ -350,9 +393,15 @@ class ETFDashboard {
         }
         
         if (metrics.low52week) {
+            // Convert 52-week low to current currency if needed
+            let low52week = metrics.low52week;
+            if (currency === 'EUR') {
+                low52week = this.convertToEUR(metrics.low52week);
+            }
+            
             datasets.push({
                 label: '52-Week Low',
-                data: new Array(labels.length).fill(metrics.low52week),
+                data: new Array(labels.length).fill(low52week),
                 borderColor: '#ef4444',
                 borderWidth: 2,
                 borderDash: [5, 5],
@@ -365,9 +414,14 @@ class ETFDashboard {
         const colors = ['#f59e0b', '#f97316', '#dc2626', '#b91c1c', '#7f1d1d'];
         thresholds.forEach((threshold, index) => {
             if (threshold.thresholdPrice) {
+                let thresholdPrice = threshold.thresholdPrice;
+                if (currency === 'EUR') {
+                    thresholdPrice = this.convertToEUR(threshold.thresholdPrice);
+                }
+                
                 datasets.push({
                     label: `${threshold.percentage}% Drop`,
-                    data: new Array(labels.length).fill(threshold.thresholdPrice),
+                    data: new Array(labels.length).fill(thresholdPrice),
                     borderColor: colors[index % colors.length],
                     borderWidth: 1,
                     borderDash: [3, 3],
@@ -391,7 +445,7 @@ class ETFDashboard {
                     plugins: {
                         title: {
                             display: true,
-                            text: `${this.currentData.symbol.name} - 3 Month Price History`
+                            text: `${this.currentData.symbol.name} - Price History (${currency === 'EUR' ? 'EUR' : 'Original Currency'})`
                         },
                         legend: {
                             display: true,
@@ -408,7 +462,7 @@ class ETFDashboard {
                         y: {
                             title: {
                                 display: true,
-                                text: 'Price ($)'
+                                text: `Price (${currency === 'EUR' ? '€' : '$'})`
                             },
                             beginAtZero: false
                         }
@@ -489,6 +543,46 @@ class ETFDashboard {
         } catch (error) {
             return dateString;
         }
+    }
+
+    formatCurrency(value, currency) {
+        if (value === null || value === undefined) {
+            return 'N/A';
+        }
+        
+        // Convert to EUR if needed and available
+        if (currency === 'EUR') {
+            // Check if we have EUR conversion available
+            if (this.currentData && this.currentData.priceData && this.currentData.priceData.length > 0) {
+                const latestData = this.currentData.priceData[this.currentData.priceData.length - 1];
+                if (latestData.close_eur !== null && latestData.close_eur !== undefined && latestData.close !== null) {
+                    // Calculate EUR conversion ratio
+                    const ratio = latestData.close_eur / latestData.close;
+                    const eurValue = value * ratio;
+                    return `€${eurValue.toFixed(2)}`;
+                }
+            }
+            // Fallback: use approximate conversion (0.85 for USD, 1.17 for GBP)
+            const eurValue = value * 0.85; // Approximate conversion
+            return `€${eurValue.toFixed(2)}`;
+        }
+        
+        return `$${value.toFixed(2)}`;
+    }
+
+    convertToEUR(value) {
+        if (!value || !this.currentData || !this.currentData.priceData || this.currentData.priceData.length === 0) {
+            return null;
+        }
+        
+        const latestData = this.currentData.priceData[this.currentData.priceData.length - 1];
+        if (latestData.close_eur !== null && latestData.close_eur !== undefined && latestData.close !== null) {
+            const ratio = latestData.close_eur / latestData.close;
+            return value * ratio;
+        }
+        
+        // Fallback conversion
+        return value * 0.85;
     }
 }
 

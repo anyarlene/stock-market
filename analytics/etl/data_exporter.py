@@ -103,9 +103,9 @@ def export_etf_data_to_json(db: DatabaseManager, months: int = 36) -> None:
 
 
 def get_price_data_for_period(db: DatabaseManager, symbol_id: int, start_date: datetime, end_date: datetime) -> List[Dict]:
-    """Get price data for a specific period."""
+    """Get price data for a specific period including EUR conversions."""
     query = """
-    SELECT date, open, high, low, close, volume
+    SELECT date, open, high, low, close, volume, open_eur, high_eur, low_eur, close_eur
     FROM etf_data 
     WHERE symbol_id = ? AND date >= ? AND date <= ?
     ORDER BY date ASC
@@ -120,14 +120,20 @@ def get_price_data_for_period(db: DatabaseManager, symbol_id: int, start_date: d
     
     price_data = []
     for row in rows:
-        price_data.append({
+        price_record = {
             "date": row[0],
             "open": float(row[1]) if row[1] is not None else None,
             "high": float(row[2]) if row[2] is not None else None,
             "low": float(row[3]) if row[3] is not None else None,
             "close": float(row[4]) if row[4] is not None else None,
-            "volume": int(row[5]) if row[5] is not None else None
-        })
+            "volume": int(row[5]) if row[5] is not None else None,
+            # EUR conversions
+            "open_eur": float(row[6]) if row[6] is not None else None,
+            "high_eur": float(row[7]) if row[7] is not None else None,
+            "low_eur": float(row[8]) if row[8] is not None else None,
+            "close_eur": float(row[9]) if row[9] is not None else None
+        }
+        price_data.append(price_record)
     
     return price_data
 

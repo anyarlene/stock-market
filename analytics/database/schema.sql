@@ -21,6 +21,11 @@ CREATE TABLE IF NOT EXISTS etf_data (
     low DECIMAL(10,2),
     close DECIMAL(10,2),
     volume INTEGER,
+    -- EUR conversion fields
+    open_eur DECIMAL(10,2),
+    high_eur DECIMAL(10,2),
+    low_eur DECIMAL(10,2),
+    close_eur DECIMAL(10,2),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(symbol_id) REFERENCES symbols(id),
     UNIQUE(symbol_id, date)

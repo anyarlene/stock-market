@@ -159,25 +159,56 @@ class DatabaseManager:
         finally:
             self.disconnect()
 
-    def insert_market_data(self, symbol_id: int, data: pd.DataFrame):
-        """Insert market data into the database."""
+    def insert_market_data(self, symbol_id: int, data: pd.DataFrame, currency: str = None):
+        """
+        Insert market data into the database with EUR conversion.
+        
+        Args:
+            symbol_id: Symbol ID
+            data: DataFrame with OHLCV data
+            currency: Currency of the data (USD, GBP, EUR)
+        """
         try:
+            from analytics.utils.currency_converter import CurrencyConverter
+            
+            converter = CurrencyConverter()
             self.connect()
+            
             for index, row in data.iterrows():
+                # Convert to EUR if needed
+                open_eur = None
+                high_eur = None
+                low_eur = None
+                close_eur = None
+                
+                if currency and currency != 'EUR':
+                    try:
+                        open_eur = converter.convert_price(float(row['Open']), currency)
+                        high_eur = converter.convert_price(float(row['High']), currency)
+                        low_eur = converter.convert_price(float(row['Low']), currency)
+                        close_eur = converter.convert_price(float(row['Close']), currency)
+                    except Exception as e:
+                        logger.warning(f"Currency conversion failed for {symbol_id} on {index.strftime('%Y-%m-%d')}: {e}")
+                
                 self.cursor.execute("""
                     INSERT OR REPLACE INTO etf_data 
-                    (symbol_id, date, open, high, low, close, volume)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    (symbol_id, date, open, high, low, close, volume, open_eur, high_eur, low_eur, close_eur)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     symbol_id,
                     index.strftime('%Y-%m-%d'),
-                    float(row['Open']),  # Ensure float conversion
+                    float(row['Open']),
                     float(row['High']),
                     float(row['Low']),
                     float(row['Close']),
-                    int(row['Volume'])   # Ensure integer conversion
+                    int(row['Volume']),
+                    open_eur,
+                    high_eur,
+                    low_eur,
+                    close_eur
                 ))
             self.conn.commit()
+            
         except sqlite3.Error as e:
             print(f"Error inserting market data: {e}")
             raise

@@ -167,8 +167,8 @@ def main():
                 
             # Insert data into database
             try:
-                db.insert_market_data(symbol['id'], df)
-                logger.info(f"✅ Successfully inserted {len(df)} records of market data for {symbol['name']}")
+                db.insert_market_data(symbol['id'], df, currency=symbol['currency'])
+                logger.info(f"✅ Successfully inserted {len(df)} records of market data for {symbol['name']} (currency: {symbol['currency']})")
                 
                 # Calculate and store metrics
                 calculate_and_store_metrics(db, symbol['id'], symbol['name'])
