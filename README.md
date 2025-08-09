@@ -55,7 +55,7 @@ pip install -r requirements.txt
 ### 1. Run Complete ETL Workflow
 ```bash
 # From stock-market/ directory
-python analytics/workflow.py
+python analytics/enhanced_workflow.py --step full
 ```
 
 This single command runs the entire pipeline:
@@ -67,18 +67,40 @@ This single command runs the entire pipeline:
 
 ### 2. Test Individual Steps
 ```bash
+# Test only incremental update
+python analytics/enhanced_workflow.py --step incremental
+
 # Test only currency conversion
-python analytics/workflow.py --step currency
+python analytics/enhanced_workflow.py --step currency
 
 # Test only data export
-python analytics/workflow.py --step export
-
-# Test only market data fetching
-python analytics/workflow.py --step fetch
+python analytics/enhanced_workflow.py --step export
 ```
 
 ### 3. Open Website
 Open `website/index.html` in your browser to view the dashboard.
+
+## 🤖 Automation Setup (Phase 2)
+
+The system includes automated daily updates via GitHub Actions:
+
+### **Automatic Daily Updates**
+- **Schedule**: Daily at 10 PM Germany time
+- **Process**: Incremental data fetch → Currency conversion → Website export
+- **Monitoring**: Real-time dashboard and email notifications
+- **Zero Maintenance**: Fully automated, no manual intervention required
+
+### **Setup Automation**
+1. **Push to GitHub**: The workflow files are already included
+2. **Configure Secrets** (optional for email notifications):
+   - Go to Settings → Secrets and variables → Actions
+   - Add: `EMAIL_USERNAME`, `EMAIL_PASSWORD`, `NOTIFICATION_EMAIL`
+3. **Test Manually**: Go to Actions → Daily Market Data Update → Run workflow
+
+### **Monitoring**
+- **Dashboard**: `https://your-username.github.io/your-repo/website/monitoring.html`
+- **GitHub Actions**: Repository → Actions tab
+- **Email Alerts**: Success/failure notifications (if configured)
 
 ## 📁 Project Structure
 

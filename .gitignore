@@ -65,3 +65,7 @@ env/
 
 # Accidental files
 tatus --porcelain
+
+# Logs
+analytics/logs/*.json
+analytics/logs/*.log

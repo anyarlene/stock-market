@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ETF Analytics - Workflow Monitoring</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+        
+        .header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 30px;
+        }
+        
+        .status-card {
+            background: white;
+            border-radius: 8px;
+            padding: 25px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-left: 4px solid #667eea;
+        }
+        
+        .status-card.success {
+            border-left-color: #10b981;
+        }
+        
+        .status-card.failure {
+            border-left-color: #ef4444;
+        }
+        
+        .status-card.running {
+            border-left-color: #f59e0b;
+        }
+        
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .status-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-size: 1.2em;
+        }
+        
+        .status-icon.success {
+            background-color: #10b981;
+            color: white;
+        }
+        
+        .status-icon.failure {
+            background-color: #ef4444;
+            color: white;
+        }
+        
+        .status-icon.running {
+            background-color: #f59e0b;
+            color: white;
+        }
+        
+        .card-title {
+            font-size: 1.2em;
+            font-weight: 600;
+            margin: 0;
+        }
+        
+        .card-content {
+            color: #666;
+        }
+        
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .metric:last-child {
+            border-bottom: none;
+        }
+        
+        .metric-label {
+            font-weight: 500;
+        }
+        
+        .metric-value {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .refresh-button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+            margin: 20px;
+            transition: background-color 0.3s;
+        }
+        
+        .refresh-button:hover {
+            background: #5a67d8;
+        }
+        
+        .last-updated {
+            text-align: center;
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 20px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .error {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 Workflow Monitoring</h1>
+            <p>ETF Analytics - Automated Data Pipeline Status</p>
+        </div>
+        
+        <div id="status-grid" class="status-grid">
+            <div class="loading">
+                <h3>Loading workflow status...</h3>
+                <p>Please wait while we fetch the latest information.</p>
+            </div>
+        </div>
+        
+        <div style="text-align: center; padding: 20px;">
+            <button class="refresh-button" onclick="loadWorkflowStatus()">
+                🔄 Refresh Status
+            </button>
+        </div>
+        
+        <div id="last-updated" class="last-updated">
+            Last updated: Never
+        </div>
+    </div>
+
+    <script>
+        async function loadWorkflowStatus() {
+            const statusGrid = document.getElementById('status-grid');
+            const lastUpdated = document.getElementById('last-updated');
+            
+            try {
+                statusGrid.innerHTML = '<div class="loading"><h3>Loading...</h3></div>';
+                
+                // Try to load workflow results
+                const response = await fetch('analytics/logs/workflow_results.json');
+                if (!response.ok) {
+                    throw new Error('No workflow results found');
+                }
+                
+                const data = await response.json();
+                
+                // Create status cards
+                let html = '';
+                
+                // Overall status
+                const overallStatus = data.overall_success ? 'success' : 'failure';
+                html += `
+                    <div class="status-card ${overallStatus}">
+                        <div class="card-header">
+                            <div class="status-icon ${overallStatus}">
+                                ${overallStatus === 'success' ? '✅' : '❌'}
+                            </div>
+                            <h3 class="card-title">Overall Status</h3>
+                        </div>
+                        <div class="card-content">
+                            <div class="metric">
+                                <span class="metric-label">Status:</span>
+                                <span class="metric-value">${overallStatus === 'success' ? 'Success' : 'Failed'}</span>
+                            </div>
+                            <div class="metric">
+                                <span class="metric-label">Duration:</span>
+                                <span class="metric-value">${data.overall_duration ? data.overall_duration.toFixed(2) + 's' : 'N/A'}</span>
+                            </div>
+                            <div class="metric">
+                                <span class="metric-label">Start Time:</span>
+                                <span class="metric-value">${new Date(data.workflow_start).toLocaleString()}</span>
+                            </div>
+                            <div class="metric">
+                                <span class="metric-label">End Time:</span>
+                                <span class="metric-value">${data.workflow_end ? new Date(data.workflow_end).toLocaleString() : 'N/A'}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Individual steps
+                for (const [stepName, stepData] of Object.entries(data.steps)) {
+                    const stepStatus = stepData.success ? 'success' : 'failure';
+                    html += `
+                        <div class="status-card ${stepStatus}">
+                            <div class="card-header">
+                                <div class="status-icon ${stepStatus}">
+                                    ${stepStatus === 'success' ? '✅' : '❌'}
+                                </div>
+                                <h3 class="card-title">${stepName}</h3>
+                            </div>
+                            <div class="card-content">
+                                <div class="metric">
+                                    <span class="metric-label">Status:</span>
+                                    <span class="metric-value">${stepStatus === 'success' ? 'Success' : 'Failed'}</span>
+                                </div>
+                                <div class="metric">
+                                    <span class="metric-label">Duration:</span>
+                                    <span class="metric-value">${stepData.duration.toFixed(2)}s</span>
+                                </div>
+                                <div class="metric">
+                                    <span class="metric-label">Start:</span>
+                                    <span class="metric-value">${new Date(stepData.start_time).toLocaleTimeString()}</span>
+                                </div>
+                                ${stepData.error ? `
+                                    <div class="metric">
+                                        <span class="metric-label">Error:</span>
+                                        <span class="metric-value" style="color: #dc2626;">${stepData.error}</span>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                // Errors section
+                if (data.errors && data.errors.length > 0) {
+                    html += `
+                        <div class="status-card failure">
+                            <div class="card-header">
+                                <div class="status-icon failure">⚠️</div>
+                                <h3 class="card-title">Errors</h3>
+                            </div>
+                            <div class="card-content">
+                                ${data.errors.map(error => `<div style="margin: 5px 0; color: #dc2626;">• ${error}</div>`).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                statusGrid.innerHTML = html;
+                lastUpdated.textContent = `Last updated: ${new Date().toLocaleString()}`;
+                
+            } catch (error) {
+                statusGrid.innerHTML = `
+                    <div class="error">
+                        <h3>❌ Unable to load workflow status</h3>
+                        <p>Error: ${error.message}</p>
+                        <p>This could mean:</p>
+                        <ul>
+                            <li>The workflow has never been run</li>
+                            <li>The results file is not accessible</li>
+                            <li>There was an error in the workflow</li>
+                        </ul>
+                    </div>
+                `;
+                lastUpdated.textContent = `Last updated: ${new Date().toLocaleString()} (Error)`;
+            }
+        }
+        
+        // Load status on page load
+        document.addEventListener('DOMContentLoaded', loadWorkflowStatus);
+        
+        // Auto-refresh every 5 minutes
+        setInterval(loadWorkflowStatus, 5 * 60 * 1000);
+    </script>
+</body>
+</html>

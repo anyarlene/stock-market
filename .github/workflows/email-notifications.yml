@@ -1,0 +1,80 @@
+name: Email Notifications
+
+on:
+  workflow_call:
+    inputs:
+      status:
+        required: true
+        type: string
+        description: 'Workflow status (success/failure)'
+      workflow_name:
+        required: true
+        type: string
+        description: 'Name of the workflow'
+      duration:
+        required: false
+        type: string
+        description: 'Workflow duration'
+      errors:
+        required: false
+        type: string
+        description: 'Error details'
+    secrets:
+      email_password:
+        required: true
+        description: 'Email password for notifications'
+
+jobs:
+  send-notification:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Send success notification
+        if: inputs.status == 'success'
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          username: ${{ secrets.EMAIL_USERNAME }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          subject: "✅ ${{ inputs.workflow_name }} - Success"
+          to: ${{ secrets.NOTIFICATION_EMAIL }}
+          from: ${{ secrets.EMAIL_USERNAME }}
+          body: |
+            🎉 Workflow completed successfully!
+            
+            **Workflow:** ${{ inputs.workflow_name }}
+            **Status:** ✅ Success
+            **Duration:** ${{ inputs.duration }}
+            **Time:** $(date)
+            
+            The daily market data update has completed successfully.
+            All data has been updated and exported to the website.
+            
+            📊 Data is now live on GitHub Pages.
+            
+      - name: Send failure notification
+        if: inputs.status == 'failure'
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          username: ${{ secrets.EMAIL_USERNAME }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          subject: "❌ ${{ inputs.workflow_name }} - Failed"
+          to: ${{ secrets.NOTIFICATION_EMAIL }}
+          from: ${{ secrets.EMAIL_USERNAME }}
+          body: |
+            ❌ Workflow failed!
+            
+            **Workflow:** ${{ inputs.workflow_name }}
+            **Status:** ❌ Failed
+            **Time:** $(date)
+            
+            The daily market data update has failed.
+            Please check the GitHub Actions logs for details.
+            
+            **Error Details:**
+            ${{ inputs.errors }}
+            
+            🔧 Manual intervention required.
