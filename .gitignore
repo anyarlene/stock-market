@@ -58,3 +58,8 @@ site/
 data/
 !data/.gitkeep
 !data/*.json
+
+# Virtual environments
+market/
+venv/
+env/
