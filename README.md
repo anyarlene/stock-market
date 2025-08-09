@@ -28,13 +28,13 @@ stock-market/
 │   ├── database/              # Database management
 │   ├── etl/                   # ETL processes
 │   ├── models/                # Analytics models
-│   └── utils/                 # Utility functions
+│   ├── utils/                 # Utility functions
+│   └── docs/                  # Documentation
 ├── website/                   # Web dashboard
 │   ├── index.html             # Main dashboard page
 │   ├── css/                   # Dashboard styling
 │   ├── js/                    # Chart.js visualization
 │   └── data/                  # Generated data files
-└── docs/                      # Documentation
 ```
 
 ## Current ETFs
@@ -45,9 +45,9 @@ The system currently tracks:
 
 ## Documentation
 
-- [Setup Guide](docs/setup.md) - How to set up and run the project
-- [Script Execution](docs/how_to_run_scripts.md) - How to run individual scripts
-- [Environment Setup](docs/environment-setup.md) - Virtual environment configuration
+- [Setup Guide](analytics/docs/setup.md) - How to set up and run the project
+- [Script Execution](analytics/docs/how_to_run_scripts.md) - How to run individual scripts
+- [Environment Setup](analytics/docs/environment-setup.md) - Virtual environment configuration
 
 ## Technologies Used
 

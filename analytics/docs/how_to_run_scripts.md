@@ -11,10 +11,10 @@ Before running any scripts, ensure you have:
 
 ```bash
 # Create virtual environment
-python -m venv venv
+python -m venv market-env
 
 # Activate virtual environment (Windows Git Bash)
-source venv/Scripts/activate
+source market-env/Scripts/activate
 
 # Install dependencies
 pip install -r requirements.txt
