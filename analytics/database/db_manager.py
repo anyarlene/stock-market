@@ -11,7 +11,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 class DatabaseManager:
-    def __init__(self, db_path: str = "analytics/database/etf_database.db"):
+    def __init__(self, db_path: str = "database/etf_database.db"):
         """Initialize database connection and create tables if they don't exist."""
         self.db_path = db_path
         self.conn = None
