@@ -23,8 +23,8 @@ class CurrencyConverter:
         self.exchange_rates = {}
         self.last_update = None
     
-    def get_historical_exchange_rates(self, from_currency: str, to_currency: str = 'EUR', 
-                                    start_date: date, end_date: date) -> Dict[str, float]:
+    def get_historical_exchange_rates(self, from_currency: str, start_date: date, end_date: date, 
+                                    to_currency: str = 'EUR') -> Dict[str, float]:
         """
         Get historical exchange rates for a date range.
         
@@ -227,7 +227,7 @@ class CurrencyConverter:
         start_date = datetime.strptime(unique_dates[0], '%Y-%m-%d').date()
         end_date = datetime.strptime(unique_dates[-1], '%Y-%m-%d').date()
         
-        rates = self.get_historical_exchange_rates(from_currency, 'EUR', start_date, end_date)
+        rates = self.get_historical_exchange_rates(from_currency, start_date, end_date, 'EUR')
         self.store_exchange_rates(from_currency, 'EUR', rates)
         
         # Convert each price record
