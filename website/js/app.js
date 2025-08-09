@@ -256,7 +256,13 @@ class ETFDashboard {
                 }
                 
                 this.currentData = symbolData;
+                
+                // Set native currency based on the loaded ETF data
+                this.nativeCurrency = this.currentData.symbol.nativeCurrency || 'USD';
                 console.log(`✅ Fallback successful: loaded ${ticker} from combined data`);
+                
+                // Update currency selector options based on native currency
+                this.updateCurrencySelector();
                 
                 this.updateUI();
                 this.initializeTimeSlider();
