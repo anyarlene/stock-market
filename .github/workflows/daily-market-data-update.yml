@@ -44,103 +44,88 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           
-      - name: Create logs directory
-        run: mkdir -p analytics/logs
-        
-      - name: Initialize Database and Load Symbols
-        run: |
-          cd analytics
-          echo "Initializing database..."
-          python -c "
-          from database.db_manager import DatabaseManager
-          db = DatabaseManager()
-          db.initialize_database()
-          print('Database initialized successfully')
-          "
-          echo "Loading ETF symbols..."
-          python -c "
-          from database.load_symbols import load_symbols
-          load_symbols('database/reference/symbols.csv')
-          print('ETF symbols loaded successfully')
-          "
-          echo "Database setup completed!"
-        
-      - name: Run Enhanced Workflow
+      - name: Setup and Run Workflow
         id: workflow
         run: |
+          echo "🚀 Starting market data update workflow..."
+          
+          # Create logs directory
+          mkdir -p analytics/logs
+          
+          # Change to analytics directory
           cd analytics
-          echo "Current directory: $(pwd)"
-          echo "Files in analytics directory:"
-          ls -la
-          echo "Running enhanced workflow..."
+          
+          echo "📊 Initializing database and loading symbols..."
+          python -c "
+          from database.db_manager import DatabaseManager
+          from database.load_symbols import load_symbols
+          
+          # Initialize database
+          db = DatabaseManager()
+          db.initialize_database()
+          print('✅ Database initialized successfully')
+          
+          # Load symbols
+          load_symbols('database/reference/symbols.csv')
+          print('✅ ETF symbols loaded successfully')
+          "
+          
+          echo "🔄 Running enhanced workflow..."
           python enhanced_workflow.py --step incremental --verbose
-          echo "✅ Enhanced workflow completed!"
-          ls -la logs/
+          
+          # Check if workflow completed successfully
           if [ -f "logs/workflow_results.json" ]; then
-            cat logs/workflow_results.json
-            # Check if the workflow actually processed any data
+            echo "✅ Workflow results file created"
+            
+            # Check overall success
             if grep -q '"overall_success": true' logs/workflow_results.json; then
               echo "✅ Workflow completed successfully"
+              echo "success=true" >> $GITHUB_OUTPUT
             else
               echo "❌ Workflow reported failure"
+              echo "success=false" >> $GITHUB_OUTPUT
               exit 1
             fi
           else
             echo "❌ No workflow results file found"
-            exit 1
-          fi
-          
-      - name: Check workflow results
-        id: results
-        run: |
-          if [ -f "analytics/logs/workflow_results.json" ]; then
-            echo "Workflow results found"
-            cat analytics/logs/workflow_results.json
-          else
-            echo "No workflow results file found"
-            exit 1
-          fi
-          
-      - name: Check for failures
-        id: check-failures
-        run: |
-          if [ -f "analytics/logs/workflow_results.json" ]; then
-            echo "✅ Workflow results file found"
-            echo "✅ Workflow completed successfully"
-          else
-            echo "❌ No results file found"
+            echo "success=false" >> $GITHUB_OUTPUT
             exit 1
           fi
           
       - name: Commit and push changes
-        if: success()
+        if: steps.workflow.outputs.success == 'true'
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          # Only add files if they exist
+          
+          # Add workflow results
           if [ -f "analytics/logs/workflow_results.json" ]; then
             git add analytics/logs/workflow_results.json
+            echo "✅ Added workflow results"
           fi
-          # Check if any JSON files exist in website/data before adding
+          
+          # Add website data files if they exist
           if ls website/data/*.json 1> /dev/null 2>&1; then
             git add website/data/*.json
+            echo "✅ Added website data files"
           else
-            echo "No JSON files found in website/data/"
+            echo "ℹ️  No website data files to add"
           fi
-          # Only commit if there are changes
+          
+          # Commit if there are changes
           if git diff --staged --quiet; then
-            echo "No changes to commit"
+            echo "ℹ️  No changes to commit"
           else
             git commit -m "🤖 Automated market data update - $(date +'%Y-%m-%d %H:%M:%S')"
+            git push
+            echo "✅ Changes committed and pushed"
           fi
-          git push
           
       - name: Success notification
         if: success()
         run: |
           echo "🎉 Daily market data update completed successfully!"
           echo "📊 Data updated and exported to website"
-          echo "⏱️  Workflow duration: 0.69 seconds"
           
       - name: Failure notification
         if: failure()
