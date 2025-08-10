@@ -1,134 +1,22 @@
-name: Daily Market Data Update
+# TEMPORARILY DISABLED - Will be set up properly at a later stage
+name: Daily Market Data Update (Disabled)
 
 on:
-  schedule:
-    # Run daily at 10 PM Germany time (CET/CEST)
-    # UTC: 21:00 (9 PM) in winter, 20:00 (8 PM) in summer
-    - cron: '0 21 * * *'
-  
-  # Allow manual trigger
+  # Disabled - no triggers
   workflow_dispatch:
     inputs:
-      step:
-        description: 'Which step to run'
+      enabled:
+        description: 'This workflow is temporarily disabled'
         required: false
-        default: 'incremental'
-        type: choice
-        options:
-          - incremental
-          - full
+        default: false
+        type: boolean
 
 jobs:
-  update-market-data:
+  disabled:
     runs-on: ubuntu-latest
-    
+    if: false  # This ensures the job never runs
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-          
-      - name: Cache pip dependencies
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-            
-      - name: Install dependencies
+      - name: Workflow Disabled
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          
-      - name: Setup and Run Workflow
-        id: workflow
-        run: |
-          echo "🚀 Starting market data update workflow..."
-          
-          # Create logs directory
-          mkdir -p analytics/logs
-          
-          # Change to analytics directory
-          cd analytics
-          
-          echo "📊 Initializing database and loading symbols..."
-          python -c "
-          from database.db_manager import DatabaseManager
-          from database.load_symbols import load_symbols
-          
-          # Initialize database
-          db = DatabaseManager()
-          db.initialize_database()
-          print('✅ Database initialized successfully')
-          
-          # Load symbols
-          load_symbols('database/reference/symbols.csv')
-          print('✅ ETF symbols loaded successfully')
-          "
-          
-          echo "🔄 Running enhanced workflow..."
-          python enhanced_workflow.py --step incremental --verbose
-          
-          # Check if workflow completed successfully
-          if [ -f "logs/workflow_results.json" ]; then
-            echo "✅ Workflow results file created"
-            
-            # Check overall success
-            if grep -q '"overall_success": true' logs/workflow_results.json; then
-              echo "✅ Workflow completed successfully"
-              echo "success=true" >> $GITHUB_OUTPUT
-            else
-              echo "❌ Workflow reported failure"
-              echo "success=false" >> $GITHUB_OUTPUT
-              exit 1
-            fi
-          else
-            echo "❌ No workflow results file found"
-            echo "success=false" >> $GITHUB_OUTPUT
-            exit 1
-          fi
-          
-      - name: Commit and push changes
-        if: steps.workflow.outputs.success == 'true'
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          
-          # Add workflow results
-          if [ -f "analytics/logs/workflow_results.json" ]; then
-            git add analytics/logs/workflow_results.json
-            echo "✅ Added workflow results"
-          fi
-          
-          # Add website data files if they exist
-          if ls website/data/*.json 1> /dev/null 2>&1; then
-            git add website/data/*.json
-            echo "✅ Added website data files"
-          else
-            echo "ℹ️  No website data files to add"
-          fi
-          
-          # Commit if there are changes
-          if git diff --staged --quiet; then
-            echo "ℹ️  No changes to commit"
-          else
-            git commit -m "🤖 Automated market data update - $(date +'%Y-%m-%d %H:%M:%S')"
-            git push
-            echo "✅ Changes committed and pushed"
-          fi
-          
-      - name: Success notification
-        if: success()
-        run: |
-          echo "🎉 Daily market data update completed successfully!"
-          echo "📊 Data updated and exported to website"
-          
-      - name: Failure notification
-        if: failure()
-        run: |
-          echo "❌ Daily market data update failed!"
-          echo "Please check the workflow logs for details"
+          echo "This workflow is temporarily disabled"
+          echo "Will be set up properly at a later stage"
