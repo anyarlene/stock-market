@@ -56,7 +56,7 @@ class ETFDashboard {
 
     populateSelector() {
         const selector = document.getElementById('etf-selector');
-        selector.innerHTML = '<option value="">Select an ETF...</option>';
+        selector.innerHTML = '';
         
         this.symbols.forEach(symbol => {
             const option = document.createElement('option');
