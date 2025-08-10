@@ -69,11 +69,22 @@ jobs:
             echo "❌ enhanced_workflow.py not found!"
             exit 1
           fi
-          echo "Running enhanced workflow..."
-          python enhanced_workflow.py --step ${{ github.event.inputs.step || 'incremental' }}
+          echo "Testing if script can be imported..."
+          python -c "import enhanced_workflow; print('✅ Script imported successfully')" || echo "❌ Import failed"
+          echo "Running enhanced workflow with verbose output..."
+          python enhanced_workflow.py --step ${{ github.event.inputs.step || 'incremental' }} --verbose
           echo "Workflow completed. Checking for results file..."
           ls -la logs/ || echo "logs directory not found"
           find . -name "*.json" -type f || echo "No JSON files found"
+          echo "Checking if workflow_results.json exists:"
+          if [ -f "logs/workflow_results.json" ]; then
+            echo "✅ workflow_results.json found!"
+            cat logs/workflow_results.json
+          else
+            echo "❌ workflow_results.json not found!"
+            echo "Contents of logs directory:"
+            ls -la logs/ || echo "logs directory empty or not found"
+          fi
           
       - name: Check workflow results
         id: results
