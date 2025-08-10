@@ -47,15 +47,23 @@ jobs:
       - name: Create logs directory
         run: mkdir -p analytics/logs
         
-      - name: Initialize Database
+      - name: Initialize Database and Load Symbols
         run: |
           cd analytics
+          echo "Initializing database..."
           python -c "
           from database.db_manager import DatabaseManager
           db = DatabaseManager()
           db.initialize_database()
           print('Database initialized successfully')
           "
+          echo "Loading ETF symbols..."
+          python -c "
+          from database.load_symbols import load_symbols
+          load_symbols()
+          print('ETF symbols loaded successfully')
+          "
+          echo "Database setup completed!"
         
       - name: Run Enhanced Workflow
         id: workflow
@@ -70,6 +78,13 @@ jobs:
           ls -la logs/
           if [ -f "logs/workflow_results.json" ]; then
             cat logs/workflow_results.json
+            # Check if the workflow actually processed any data
+            if grep -q '"overall_success": true' logs/workflow_results.json; then
+              echo "✅ Workflow completed successfully"
+            else
+              echo "❌ Workflow reported failure"
+              exit 1
+            fi
           else
             echo "❌ No workflow results file found"
             exit 1

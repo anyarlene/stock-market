@@ -115,6 +115,11 @@ class EnhancedWorkflowOrchestrator:
             fetcher = EnhancedMarketDataFetcher()
             results = fetcher.run_incremental_update()
             
+            # Check if no symbols were found
+            if results['total_symbols'] == 0:
+                logger.error("❌ No symbols found to process")
+                return False
+            
             # Check if any symbols failed
             if results['failed'] > 0:
                 logger.warning(f"⚠️  {results['failed']} symbols failed to update")
