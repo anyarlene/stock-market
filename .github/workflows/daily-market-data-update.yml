@@ -60,7 +60,7 @@ jobs:
           echo "Loading ETF symbols..."
           python -c "
           from database.load_symbols import load_symbols
-          load_symbols()
+          load_symbols('database/reference/symbols.csv')
           print('ETF symbols loaded successfully')
           "
           echo "Database setup completed!"
