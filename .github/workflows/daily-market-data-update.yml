@@ -42,16 +42,38 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install yfinance pandas requests
+          pip install -r requirements.txt
           
       - name: Create logs directory
         run: mkdir -p analytics/logs
+        
+      - name: Initialize Database
+        run: |
+          cd analytics
+          python -c "
+          from database.db_manager import DatabaseManager
+          db = DatabaseManager()
+          db.initialize_database()
+          print('Database initialized successfully')
+          "
         
       - name: Run Enhanced Workflow
         id: workflow
         run: |
           cd analytics
+          echo "Current directory: $(pwd)"
+          echo "Files in analytics directory:"
+          ls -la
+          echo "Checking if enhanced_workflow.py exists..."
+          if [ ! -f "enhanced_workflow.py" ]; then
+            echo "❌ enhanced_workflow.py not found!"
+            exit 1
+          fi
+          echo "Running enhanced workflow..."
           python enhanced_workflow.py --step ${{ github.event.inputs.step || 'incremental' }}
+          echo "Workflow completed. Checking for results file..."
+          ls -la logs/ || echo "logs directory not found"
+          find . -name "*.json" -type f || echo "No JSON files found"
           
       - name: Check workflow results
         id: results
