@@ -18,7 +18,7 @@ A comprehensive ETF analytics platform with real-time market data, currency conv
 ## 🏗️ Architecture
 
 ### ETL Pipeline
-The system uses a **modular ETL workflow** with state-of-the-art practices:
+The system uses a **modular ETL workflow**:
 
 ```
 📊 Database Init → 📋 Load Symbols → 📈 Fetch Data → 💱 Convert Currencies → 📤 Export Data
