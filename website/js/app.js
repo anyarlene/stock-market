@@ -264,13 +264,13 @@ class ETFDashboard {
                 // Update currency selector options based on native currency
                 this.updateCurrencySelector();
                 
-                this.updateUI();
+            this.updateUI();
                 this.initializeTimeSlider();
-                this.createChart();
+            this.createChart();
             } catch (fallbackError) {
                 console.error('❌ Fallback also failed:', fallbackError);
                 this.showError(`Failed to load data for ${ticker}: ${error.message}`);
-                throw error;
+            throw error;
             }
         }
     }
@@ -479,34 +479,34 @@ class ETFDashboard {
             selectedThreshold.thresholdPrice;
         
         // Create profit target cards for the selected threshold
-        profitTargets.forEach(profitPercent => {
+            profitTargets.forEach(profitPercent => {
             const profitTargetPrice = entryPrice * (1 + profitPercent / 100);
-            
-            const card = document.createElement('div');
-            card.className = 'profit-target-card';
-            
-            // Check if profit target has been reached
-            if (currentPrice && currentPrice >= profitTargetPrice) {
-                card.classList.add('reached');
-            }
-            
+                
+                const card = document.createElement('div');
+                card.className = 'profit-target-card';
+                
+                // Check if profit target has been reached
+                if (currentPrice && currentPrice >= profitTargetPrice) {
+                    card.classList.add('reached');
+                }
+                
             const symbol = this.getCurrencySymbol(this.currentCurrency);
             
             // Create the card content
-            card.innerHTML = `
+                card.innerHTML = `
                 <div class="profit-target-header">
                     <div class="profit-target-percentage">${profitPercent}% Profit</div>
                     <div class="entry-point-info">from ${selectedThreshold.percentage}% Drop Entry</div>
                 </div>
-                <div class="profit-target-price">
+                    <div class="profit-target-price">
                     ${symbol}${profitTargetPrice.toFixed(2)}
-                </div>
+                    </div>
                 <div class="entry-point-price">
                     Entry: ${symbol}${entryPrice.toFixed(2)}
-                </div>
-            `;
-            
-            grid.appendChild(card);
+                    </div>
+                `;
+                
+                grid.appendChild(card);
         });
     }
 
@@ -543,7 +543,7 @@ class ETFDashboard {
         }
         
         console.log(`📊 Chart data available: ${this.currentData.priceData.length} price points`);
-
+        
         // Destroy existing chart if it exists
         if (this.chart) {
             this.chart.destroy();
@@ -646,25 +646,25 @@ class ETFDashboard {
 
         // Add threshold lines if enabled
         if (this.chartMetrics.showThresholds) {
-            const colors = ['#f59e0b', '#f97316', '#dc2626', '#b91c1c', '#7f1d1d'];
-            thresholds.forEach((threshold, index) => {
-                if (threshold.thresholdPrice) {
+        const colors = ['#f59e0b', '#f97316', '#dc2626', '#b91c1c', '#7f1d1d'];
+        thresholds.forEach((threshold, index) => {
+            if (threshold.thresholdPrice) {
                     let thresholdPrice = threshold.thresholdPrice;
                     if (this.currentCurrency === 'EUR') {
                         thresholdPrice = this.convertToEUR(threshold.thresholdPrice);
                     }
                     
-                    datasets.push({
-                        label: `${threshold.percentage}% Drop`,
+                datasets.push({
+                    label: `${threshold.percentage}% Drop`,
                         data: new Array(labels.length).fill(thresholdPrice),
-                        borderColor: colors[index % colors.length],
-                        borderWidth: 1,
-                        borderDash: [3, 3],
-                        fill: false,
-                        pointRadius: 0
-                    });
-                }
-            });
+                    borderColor: colors[index % colors.length],
+                    borderWidth: 1,
+                    borderDash: [3, 3],
+                    fill: false,
+                    pointRadius: 0
+                });
+            }
+        });
         }
 
         // Create chart with simplified configuration

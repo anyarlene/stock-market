@@ -64,27 +64,16 @@ jobs:
           echo "Current directory: $(pwd)"
           echo "Files in analytics directory:"
           ls -la
-          echo "Creating a test workflow results file..."
-          cat > logs/workflow_results.json << 'EOF'
-          {
-            "workflow_start": "2025-08-10T01:24:40.364000",
-            "overall_success": true,
-            "overall_duration": 0.69,
-            "workflow_end": "2025-08-10T01:24:41.051000",
-            "steps": {
-              "Market Data Fetch": {
-                "success": true,
-                "duration": 0.68,
-                "start_time": "2025-08-10T01:24:40.365000",
-                "end_time": "2025-08-10T01:24:41.050000"
-              }
-            },
-            "errors": []
-          }
-          EOF
-          echo "✅ Test workflow results file created!"
+          echo "Running enhanced workflow..."
+          python enhanced_workflow.py --step incremental --verbose
+          echo "✅ Enhanced workflow completed!"
           ls -la logs/
-          cat logs/workflow_results.json
+          if [ -f "logs/workflow_results.json" ]; then
+            cat logs/workflow_results.json
+          else
+            echo "❌ No workflow results file found"
+            exit 1
+          fi
           
       - name: Check workflow results
         id: results
@@ -113,9 +102,22 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add website/data/*.json
-          git add analytics/logs/workflow_results.json
-          git commit -m "🤖 Automated market data update - $(date +'%Y-%m-%d %H:%M:%S')" || echo "No changes to commit"
+          # Only add files if they exist
+          if [ -f "analytics/logs/workflow_results.json" ]; then
+            git add analytics/logs/workflow_results.json
+          fi
+          # Check if any JSON files exist in website/data before adding
+          if ls website/data/*.json 1> /dev/null 2>&1; then
+            git add website/data/*.json
+          else
+            echo "No JSON files found in website/data/"
+          fi
+          # Only commit if there are changes
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "🤖 Automated market data update - $(date +'%Y-%m-%d %H:%M:%S')"
+          fi
           git push
           
       - name: Success notification
