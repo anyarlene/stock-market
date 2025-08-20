@@ -1,0 +1,49 @@
+name: Test Market Data Automation
+
+on:
+  workflow_dispatch:  # Manual trigger only
+  push:
+    branches:
+      - automation-daily-update  # Runs when you push to this branch
+
+jobs:
+  test-market-data:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        
+    - name: Initialize database
+      run: |
+        python analytics/database/init_db.py
+        python analytics/database/load_symbols.py
+        
+    - name: Run market data update
+      run: |
+        python analytics/enhanced_workflow.py --step incremental
+        
+    - name: Show results
+      run: |
+        echo "=== Database Status ==="
+        python analytics/database_diagnostic.py
+        
+    - name: Commit and push changes (only if on automation-daily-update branch)
+      if: github.ref == 'refs/heads/automation-daily-update'
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add analytics/database/etf_database.db
+        git add analytics/logs/
+        git commit -m "Test automation update $(date +'%Y-%m-%d %H:%M:%S')" || echo "No changes to commit"
+        git push
