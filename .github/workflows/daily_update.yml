@@ -7,7 +7,7 @@ on:
   workflow_dispatch:  # Allows manual trigger
   push:
     branches:
-      - main  # Only runs on main branch for production
+      - automation-daily-update  # Only runs on test branch
 
 jobs:
   update-market-data:
