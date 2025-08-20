@@ -29,23 +29,25 @@ jobs:
         
     - name: Initialize database (if needed)
       run: |
-        python analytics/database/init_db.py || echo "Database already exists"
-        python analytics/database/load_symbols.py || echo "Symbols already loaded"
+        cd analytics
+        PYTHONPATH=.. python database/init_db.py || echo "Database already exists"
+        PYTHONPATH=.. python database/load_symbols.py || echo "Symbols already loaded"
+        cd ..
         
     - name: Run market data update
       run: |
-        python analytics/enhanced_workflow.py --step incremental
+        PYTHONPATH=. python analytics/enhanced_workflow.py --step incremental
         
     - name: Show results
       run: |
         echo "=== Database Status ==="
-        python analytics/database_diagnostic.py
+        PYTHONPATH=. python analytics/database_diagnostic.py
         
     - name: Commit and push changes
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        git add analytics/database/etf_database.db
-        git add analytics/logs/
+        git add analytics/database/etf_database.db || echo "Database file not found, skipping"
+        git add analytics/logs/ || echo "Logs directory not found, skipping"
         git commit -m "Market data update $(date +'%Y-%m-%d %H:%M:%S')" || echo "No changes to commit"
         git push

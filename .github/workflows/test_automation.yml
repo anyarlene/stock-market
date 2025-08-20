@@ -27,8 +27,8 @@ jobs:
     - name: Initialize database
       run: |
         cd analytics
-        python database/init_db.py
-        python database/load_symbols.py
+        PYTHONPATH=.. python database/init_db.py
+        PYTHONPATH=.. python database/load_symbols.py
         cd ..
         
     - name: Run market data update
