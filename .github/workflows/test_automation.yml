@@ -4,7 +4,7 @@ on:
   workflow_dispatch:  # Manual trigger only
   push:
     branches:
-      - automation-daily-update  # Runs when you push to this branch
+      - automation-daily-update  # Only runs on test branch
 
 jobs:
   test-market-data:
@@ -40,15 +40,15 @@ jobs:
         echo "=== Database Status ==="
         PYTHONPATH=. python analytics/database_diagnostic.py
         
-    - name: Commit and push changes (only if on automation-daily-update branch)
+    - name: Commit and push changes (only on test branch)
       if: github.ref == 'refs/heads/automation-daily-update'
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        git pull origin automation-daily-update --rebase || echo "No pull needed"
+        git pull origin ${{ github.ref_name }} --rebase || echo "No pull needed"
         git add analytics/database/etf_database.db || echo "Database file not found, skipping"
         git add analytics/logs/ || echo "Logs directory not found, skipping"
         git commit -m "Test automation update $(date +'%Y-%m-%d %H:%M:%S')" || echo "No changes to commit"
-        git push origin automation-daily-update
+        git push origin ${{ github.ref_name }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

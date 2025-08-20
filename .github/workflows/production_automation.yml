@@ -1,13 +1,10 @@
-name: Daily Market Data Update
+name: Production Market Data Automation
 
 on:
   schedule:
     # Runs daily at 10 PM Berlin time (UTC+1, so 21:00 UTC)
     - cron: '0 21 * * *'
   workflow_dispatch:  # Allows manual trigger
-  push:
-    branches:
-      - main  # Only runs on main branch for production
 
 jobs:
   update-market-data:
@@ -50,7 +47,7 @@ jobs:
         git pull origin ${{ github.ref_name }} --rebase || echo "No pull needed"
         git add analytics/database/etf_database.db || echo "Database file not found, skipping"
         git add analytics/logs/ || echo "Logs directory not found, skipping"
-        git commit -m "Market data update $(date +'%Y-%m-%d %H:%M:%S')" || echo "No changes to commit"
+        git commit -m "Daily market data update $(date +'%Y-%m-%d %H:%M:%S')" || echo "No changes to commit"
         git push origin ${{ github.ref_name }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
