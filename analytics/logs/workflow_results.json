@@ -1,0 +1,16 @@
+{
+  "workflow_start": "2025-08-20T11:31:06.872491",
+  "steps": {
+    "Market Data Fetch": {
+      "start_time": "2025-08-20T11:31:06.888010",
+      "end_time": "2025-08-20T11:31:24.585345",
+      "duration": 17.697335,
+      "success": true,
+      "error": null
+    }
+  },
+  "overall_success": true,
+  "errors": [],
+  "workflow_end": "2025-08-20T11:31:24.585345",
+  "overall_duration": 17.712854
+}

@@ -36,9 +36,13 @@ wheels/
 # Database
 *.db
 *.sqlite3
+# Allow database for automation
+!analytics/database/etf_database.db
 
 # Logs
 *.log
+# Allow logs for automation
+!analytics/logs/
 
 # Unit test / coverage reports
 htmlcov/
@@ -66,6 +70,9 @@ env/
 # Accidental files
 tatus --porcelain
 
-# Logs
+# Logs (but allow automation logs)
 analytics/logs/*.json
 analytics/logs/*.log
+# Allow automation logs
+!analytics/logs/workflow_results.json
+!analytics/logs/automation.log
