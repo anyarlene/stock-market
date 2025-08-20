@@ -80,33 +80,40 @@ python analytics/enhanced_workflow.py --step export
 ### 3. Open Website
 Open `website/index.html` in your browser to view the dashboard.
 
-## 🤖 Automation Setup (Phase 2)
+## 🤖 Automation Setup
 
-The system includes automated daily updates via GitHub Actions:
+The system includes automated daily updates via GitHub Actions with separate testing and production environments:
+
+### **Workflow Structure**
+
+**Testing Environment (`automation-daily-update` branch):**
+- `test_daily_update.yml` - Runs when you push to test branch (for testing daily workflow)
+
+**Production Environment (`main` branch):**
+- `production_automation.yml` - Runs daily at 10 PM Berlin time (production automation)
 
 ### **Automatic Daily Updates**
-- **Schedule**: Daily at 10 PM Germany time
-- **Process**: Incremental data fetch → Currency conversion → Website export
-- **Monitoring**: Real-time dashboard and email notifications
+- **Schedule**: Daily at 10 PM Berlin time (UTC+1)
+- **Process**: Incremental data fetch → Currency conversion → Database update
+- **Monitoring**: Real-time logs in GitHub Actions
 - **Zero Maintenance**: Fully automated, no manual intervention required
 
 ### **Setup Automation**
-1. **Push to GitHub**: The workflow files are already included
-2. **Configure Secrets** (optional for email notifications):
-   - Go to Settings → Secrets and variables → Actions
-   - Add: `EMAIL_USERNAME`, `EMAIL_PASSWORD`, `NOTIFICATION_EMAIL`
-3. **Test Manually**: Go to Actions → Daily Market Data Update → Run workflow
+1. **Test on your branch**: Push to `automation-daily-update` to test workflows
+2. **Deploy to production**: Merge to `main` branch for production automation
+3. **Monitor**: Check GitHub Actions tab for workflow status
 
 ### **Monitoring**
 - **GitHub Actions**: Repository → Actions tab
 - **Workflow Logs**: Check `analytics/logs/workflow_results.json` for detailed results
+- **Database Updates**: Committed automatically to repository
 
 ## 📁 Project Structure
 
 ```
 stock-market/
 ├── analytics/                    # ETL Pipeline
-│   ├── workflow.py              # Main orchestrator
+│   ├── enhanced_workflow.py     # Main orchestrator
 │   ├── database_diagnostic.py   # Debugging tool
 │   ├── database/
 │   │   ├── db_manager.py        # Database operations
@@ -114,10 +121,15 @@ stock-market/
 │   │   └── load_symbols.py      # Load ETF symbols
 │   ├── etl/
 │   │   ├── market_data_fetcher.py    # Fetch market data
+│   │   ├── enhanced_market_data_fetcher.py # Enhanced data fetcher
 │   │   ├── currency_converter_etl.py # Convert currencies
 │   │   └── data_exporter.py          # Export for website
-│   └── utils/
-│       └── currency_converter.py     # Currency conversion logic
+│   ├── utils/
+│   │   └── currency_converter.py     # Currency conversion logic
+│   └── logs/                    # Automation logs
+├── .github/workflows/           # GitHub Actions
+│   ├── test_daily_update.yml    # Testing workflow
+│   └── production_automation.yml # Production workflow
 ├── website/                     # Frontend Dashboard
 │   ├── index.html              # Main dashboard
 │   ├── css/style.css           # Styling
