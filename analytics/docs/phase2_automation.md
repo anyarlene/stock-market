@@ -6,20 +6,36 @@ Phase 2 implements automated daily execution of the enhanced workflow using GitH
 
 ## Components Implemented
 
-### 1. Daily Market Data Update Workflow (`.github/workflows/daily-market-data-update.yml`)
+### 1. Testing Workflow (`.github/workflows/test_daily_update.yml`)
 
 **Features:**
-- **Scheduled Execution**: Daily at 10 PM Germany time (21:00 UTC)
-- **Manual Trigger**: Can be run manually with step selection
+- **Trigger**: Runs when you push to `automation-daily-update` branch
+- **Purpose**: Testing daily workflow functionality
+- **Manual Trigger**: Can be run manually for testing
 - **Dependency Management**: Caches pip dependencies for faster execution
 - **Error Handling**: Comprehensive error checking and reporting
 - **Auto-Commit**: Automatically commits updated data files
-- **Success/Failure Notifications**: Detailed status reporting
+
+**Usage:**
+- **Branch**: `automation-daily-update`
+- **Trigger**: Push to branch
+- **Purpose**: Development and testing
+
+### 2. Production Workflow (`.github/workflows/production_automation.yml`)
+
+**Features:**
+- **Scheduled Execution**: Daily at 10 PM Berlin time (21:00 UTC)
+- **Manual Trigger**: Can be run manually for maintenance
+- **Dependency Management**: Caches pip dependencies for faster execution
+- **Error Handling**: Comprehensive error checking and reporting
+- **Auto-Commit**: Automatically commits updated data files
+- **Production Ready**: Optimized for production environment
 
 **Schedule:**
 - **Cron Expression**: `0 21 * * *` (9 PM UTC)
-- **Germany Time**: 10 PM (adjusts for daylight saving)
+- **Berlin Time**: 10 PM (adjusts for daylight saving)
 - **Frequency**: Daily
+- **Branch**: `main`
 
 ### 2. Email Notifications (`.github/workflows/email-notifications.yml`)
 
@@ -66,21 +82,32 @@ NOTIFICATION_EMAIL=your-notification-email@example.com
    - Generate password for "Mail"
 3. Use this password in the `EMAIL_PASSWORD` secret
 
-### 3. Manual Testing
+### 3. Testing and Production Setup
 
-**Test the workflow manually:**
+**Testing Workflow:**
+1. Push changes to `automation-daily-update` branch
+2. `test_daily_update.yml` runs automatically
+3. Check GitHub Actions tab for results
+4. Verify database updates and logs
+
+**Production Workflow:**
+1. Merge `automation-daily-update` to `main` branch
+2. `production_automation.yml` takes over for daily automation
+3. Runs daily at 10 PM Berlin time
+4. Monitors via GitHub Actions tab
+
+**Manual Testing:**
 1. Go to your GitHub repository
-2. Navigate to Actions → Daily Market Data Update
-3. Click "Run workflow"
-4. Select step (incremental/full)
+2. Navigate to Actions → Test Daily Market Data Update (for testing)
+3. Or Actions → Production Market Data Automation (for production)
+4. Click "Run workflow"
 5. Click "Run workflow"
 
 **Expected behavior:**
 - Workflow runs for 1-5 minutes
 - Updates market data incrementally
-- Exports data for website
-- Commits changes automatically
-- Sends email notification (if configured)
+- Commits database changes automatically
+- Updates logs with results
 
 ### 4. Monitoring Setup
 
