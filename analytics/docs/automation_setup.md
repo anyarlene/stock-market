@@ -96,4 +96,8 @@ The `Test Automation` workflow runs automatically. Check the Actions tab to conf
 - Trim large log or database files if the repo grows too much.
 - Update dependencies in `requirements.txt` when needed and make sure the test workflow passes.
 
+## Airflow Companion (Optional)
+
+If you want to rehearse the workflow locally with Apache Airflow, see `analytics/docs/airflow_setup.md`. The DAG runs the same scripts as the production automation and follows the identical weekday schedule.
+
 If something breaks, start with the newest workflow logs, fix locally, push a branch, and let `test_automation.yml` confirm the fix. Merge once it is green.

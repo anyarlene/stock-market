@@ -26,6 +26,7 @@ wheels/
 .env
 .env.*
 !.env.example
+!airflow/.env.example
 
 # IDE
 .idea/
@@ -61,6 +62,10 @@ site/
 # Project specific
 website/data/*.json
 !website/data/.gitkeep
+
+# Airflow runtime artifacts
+airflow/.env
+airflow/logs/
 
 # Virtual environments
 market-env/
