@@ -2,8 +2,8 @@ name: Production Market Data Automation
 
 on:
   schedule:
-    # Runs Monday through Friday at 10 PM Berlin time (UTC+1, so 21:00 UTC)
-    - cron: '0 21 * * 1-5'
+    # Runs Monday through Friday at 10:15 PM Berlin time (UTC+1, so 21:15 UTC)
+    - cron: '15 21 * * 1-5'
   workflow_dispatch:  # Allows manual trigger
 
 permissions:
