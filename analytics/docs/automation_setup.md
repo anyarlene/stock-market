@@ -2,150 +2,98 @@
 
 ## Overview
 
-This project uses GitHub Actions for automated daily market data updates with separate testing and production environments.
+This project now uses two GitHub Actions workflows:
+
+- `test_automation.yml` keeps an eye on pushes and pull requests.
+- `production_automation.yml` updates market data every weekday evening.
+
+No special staging branch is needed. Everything runs from `main` and feature branches.
 
 ## Workflow Structure
 
-### Testing Environment
-- **Branch**: `automation-daily-update`
-- **Workflow**: `test_daily_update.yml`
-- **Trigger**: Push to branch
-- **Purpose**: Test automation changes before production
+### Test Automation (CI)
+- **Branches**: `main` and any branch under `feature/**`
+- **Trigger**: Push, pull request, or manual dispatch
+- **Purpose**: Run `analytics/test_enhanced_workflow.py` to be sure the automation code still loads and connects to the database
 
-### Production Environment
+### Production Automation
 - **Branch**: `main`
-- **Workflow**: `production_automation.yml`
-- **Trigger**: Daily at 10 PM Berlin time (UTC+1)
-- **Purpose**: Production daily automation
+- **Trigger**: Monday–Friday at 21:00 UTC (22:00 Berlin during daylight saving, 21:00 otherwise)
+- **Purpose**: Run the incremental market data update and commit any database/log changes
 
 ## Workflow Files
 
-### `.github/workflows/test_daily_update.yml`
-- **Name**: Test Daily Market Data Update
-- **Trigger**: Push to `automation-daily-update` branch
-- **Schedule**: None (manual/push triggered)
-- **Purpose**: Testing automation changes
+### `.github/workflows/test_automation.yml`
+- **Name**: Test Automation
+- **What it does**: Installs dependencies and runs `PYTHONPATH=. python analytics/test_enhanced_workflow.py`
+- **When it runs**: Every push or pull request aimed at `main`, plus manual dispatch if you need it
 
 ### `.github/workflows/production_automation.yml`
 - **Name**: Production Market Data Automation
-- **Trigger**: Daily at 10 PM Berlin time
-- **Schedule**: `0 21 * * *` (9 PM UTC)
-- **Purpose**: Production daily automation
+- **What it does**: Performs the incremental update, prints diagnostics, and pushes changes back to `main`
+- **When it runs**: Weekdays at `0 21 * * 1-5` (21:00 UTC)
+- **Permissions**: Uses the built-in token with `contents: write` so the push step succeeds
 
-## Setup Process
+## Typical Workflow
 
-### 1. Testing Phase
+### 1. Create a feature branch
 ```bash
-# Work on automation-daily-update branch
-git checkout automation-daily-update
-
-# Make changes to workflows
-# Push changes
-git push origin automation-daily-update
-
-# test_daily_update.yml runs automatically
-# Check GitHub Actions tab for results
+git checkout -b feature/my-update
 ```
 
-### 2. Production Deployment
+### 2. Make your changes and push
 ```bash
-# Create Pull Request to merge to main
-# Review and merge PR
-
-# production_automation.yml takes over
-# Runs daily at 10 PM Berlin time
+git add .
+git commit -m "Describe my update"
+git push origin feature/my-update
 ```
 
-## Workflow Steps
+The `Test Automation` workflow runs automatically. Check the Actions tab to confirm it passes.
 
-Both workflows execute the same steps:
+### 3. Open a pull request
+- Review feedback.
+- When ready, merge into `main`.
 
-1. **Checkout code** - Get latest code
-2. **Set up Python** - Install Python 3.12
-3. **Install dependencies** - Install required packages
-4. **Initialize database** - Create database and load symbols
-5. **Run market data update** - Fetch latest market data
-6. **Show results** - Display database status
-7. **Commit and push changes** - Save updated data to repository
+### 4. Production automation takes over
+- The weekday schedule runs from `main`.
+- The job pulls, updates the database, commits results, and pushes back to `main`.
 
 ## Monitoring
 
-### GitHub Actions
-- Go to repository → Actions tab
-- View workflow runs and logs
-- Check for success/failure status
+- **GitHub Actions**: Repository → Actions → select either workflow and review the logs.
+- **Logs in repo**: `analytics/logs/workflow_results.json` and any new files in `analytics/logs/`.
+- **Database**: Updated file stays at `analytics/database/etf_database.db`.
 
-### Logs
-- Workflow results: `analytics/logs/workflow_results.json`
-- Automation logs: `analytics/logs/automation.log`
+## Troubleshooting Tips
 
-### Database
-- Updated database: `analytics/database/etf_database.db`
-- Automatically committed to repository
+1. **Push fails in production job**  
+   - Make sure repository settings allow workflows to have read/write permissions (Settings → Actions → General).
 
-## Troubleshooting
+2. **Module not found**  
+   - The workflow sets `PYTHONPATH=.` before running Python scripts. If you add new packages, update `requirements.txt`.
 
-### Common Issues
-
-1. **Permission denied (403 error)**
-   - Solution: Enable "Read and write permissions" in repository settings
-   - Go to Settings → Actions → General → Workflow permissions
-
-2. **Module not found errors**
-   - Solution: PYTHONPATH is set correctly in workflows
-   - No action needed
-
-3. **Git push conflicts**
-   - Solution: Workflows use `git pull --rebase` to handle conflicts
-   - No action needed
-
-### Testing Workflow Issues
-- Check if running on correct branch (`automation-daily-update`)
-- Verify workflow file exists and is valid
-- Check GitHub Actions logs for specific errors
-
-### Production Workflow Issues
-- Verify workflow is on `main` branch
-- Check schedule timing (10 PM Berlin time)
-- Monitor via GitHub Actions tab
+3. **Conflicts when pushing**  
+   - The job runs `git pull origin main --rebase`. If conflicts appear, fix them locally on `main`, push, and the next run will succeed.
 
 ## Best Practices
 
-1. **Always test on automation-daily-update branch first**
-2. **Verify workflows run successfully before merging to main**
-3. **Monitor GitHub Actions tab regularly**
-4. **Check logs for any issues**
-5. **Keep workflow files simple and maintainable**
+1. Keep feature branches small and focused.
+2. Let `test_automation.yml` be your first safety net before opening a pull request.
+3. Watch the Actions tab for both workflows after merging.
+4. Keep workflow files simple and only install what you need.
 
-## Configuration
+## Configuration Reminders
 
-### Repository Settings
-- **Actions permissions**: "Allow all actions and reusable workflows"
-- **Workflow permissions**: "Read and write permissions"
-- **Branch protection**: Optional, but recommended for main branch
+- **Repository settings**  
+  - Allow all actions and reusable workflows.  
+  - Set workflow permissions to “Read and write”.
+- **Secrets**  
+  - The built-in `GITHUB_TOKEN` is enough today. Add more secrets only if future steps need them.
 
-### Environment Variables
-- `GITHUB_TOKEN`: Automatically provided by GitHub Actions
-- No additional secrets required for basic functionality
+## Maintenance Checklist
 
-## Maintenance
+- Review workflow runs a few times a week.
+- Trim large log or database files if the repo grows too much.
+- Update dependencies in `requirements.txt` when needed and make sure the test workflow passes.
 
-### Regular Tasks
-- Monitor workflow success rates
-- Check for any failed runs
-- Review logs for performance issues
-- Update dependencies as needed
-
-### Updates
-- Test changes on automation-daily-update branch
-- Verify workflows run successfully
-- Merge to main for production deployment
-- Monitor production automation
-
-## Support
-
-For issues with automation:
-1. Check GitHub Actions logs
-2. Review workflow files for errors
-3. Verify repository permissions
-4. Test on automation-daily-update branch first
+If something breaks, start with the newest workflow logs, fix locally, push a branch, and let `test_automation.yml` confirm the fix. Merge once it is green.
