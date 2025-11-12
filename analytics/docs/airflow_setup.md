@@ -51,7 +51,7 @@ airflow/
 
 4. **Access the UI.**
    - Open <http://localhost:8080>.
-   - Log in with `admin / admin`. (Change the password after the first login.)
+   - Log in with the default credentials.
 
 ## Daily DAG
 
