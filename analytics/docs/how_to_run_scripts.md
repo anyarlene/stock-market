@@ -66,13 +66,18 @@ python -m analytics.etl.market_data_fetcher
 
 ## Daily Operations
 
-### Automated Updates
+### Automated Updates (Production)
 
-The project includes GitHub Actions for daily updates:
-- Runs automatically at 22:00 UTC on weekdays
-- Fetches latest market data
-- Updates metrics and thresholds
-- Commits changes to the repository
+The project includes GitHub Actions for automated daily updates:
+- **Schedule**: Runs automatically at 21:15 UTC (10:15 PM Berlin time) on weekdays
+- **Process**:
+  1. Fetches latest market data (incremental update)
+  2. Runs database diagnostics
+  3. Exports website data (JSON files)
+  4. Commits and pushes all changes to repository
+  5. Triggers website deployment automatically
+- **Branch**: Runs on `main` branch only
+- **Monitoring**: Check GitHub Actions tab for workflow status
 
 ### Manual Updates
 

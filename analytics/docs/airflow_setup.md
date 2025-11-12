@@ -40,6 +40,7 @@ airflow/
    docker compose build
    docker compose up airflow-init
    ```
+   **Note**: The Dockerfile has been configured to work with Airflow 2.9.1 and SQLAlchemy 1.4.x (compatibility fix).
    Re-run `docker compose build` whenever you change files under `airflow/` (for example updating `requirements.txt`).
 
 3. **Start the Airflow services.**
@@ -73,11 +74,18 @@ In the Airflow UI, switch the toggle to “On”, then press “▶ Trigger DAG�
 
 ## Production vs Local
 
-- **GitHub Actions** keeps running the official nightly job in the cloud. It is still the source of truth for pushing updated data to the repository.
+- **GitHub Actions** is the production automation that runs in the cloud. It updates the database, exports website data, and commits everything to the repository. This is the source of truth for production updates.
 - **Airflow (local)** is perfect for:
-  - rehearsing the workflow before changing production code
-  - replaying historic days
+  - testing workflow changes before deploying to production
+  - rehearsing the workflow locally without affecting production
+  - debugging issues in a controlled environment
   - demonstrating orchestration skills to stakeholders
+
+**Important**: 
+- Airflow only runs when Docker containers are running locally
+- Scheduled runs in Airflow UI show data interval dates, not execution times
+- If containers aren't running at the scheduled time, runs won't execute (but may show as scheduled in the UI)
+- Always work on feature branches, never directly on `main`
 
 When you are ready to host Airflow remotely, reuse this same folder. Point `docker-compose.yaml` at a VM or adapt the DAG to Astro, MWAA, or Google Composer with minimal tweaks.
 
