@@ -2,12 +2,12 @@
 
 ## Overview
 
-This project now uses two GitHub Actions workflows:
+Two GitHub Actions workflows:
 
-- `test_automation.yml` keeps an eye on pushes and pull requests.
-- `production_automation.yml` updates market data every weekday evening.
+- `test_automation.yml` - CI testing on pushes and pull requests
+- `production_automation.yml` - Automated daily updates on weekdays
 
-No special staging branch is needed. Everything runs from `main` and feature branches.
+Workflows run on `main` and `feature/**` branches.
 
 ## Workflow Structure
 
@@ -18,8 +18,8 @@ No special staging branch is needed. Everything runs from `main` and feature bra
 
 ### Production Automation
 - **Branch**: `main`
-- **Trigger**: Monday–Friday at 21:00 UTC (22:00 Berlin during daylight saving, 21:00 otherwise)
-- **Purpose**: Run the incremental market data update and commit any database/log changes
+- **Trigger**: Monday–Friday at 21:15 UTC (22:15 Berlin during daylight saving, 21:15 otherwise)
+- **Purpose**: Run the incremental market data update, export website data, and commit all changes
 
 ## Workflow Files
 
@@ -30,13 +30,19 @@ No special staging branch is needed. Everything runs from `main` and feature bra
 
 ### `.github/workflows/production_automation.yml`
 - **Name**: Production Market Data Automation
-- **What it does**: Performs the incremental update, prints diagnostics, and pushes changes back to `main`
-- **When it runs**: Weekdays at `0 21 * * 1-5` (21:00 UTC)
+- **What it does**: 
+  1. Performs the incremental market data update
+  2. Runs database diagnostics
+  3. Exports website data (JSON files)
+  4. Commits and pushes database, logs, and website data to `main`
+- **When it runs**: Weekdays at `15 21 * * 1-5` (21:15 UTC)
 - **Permissions**: Uses the built-in token with `contents: write` so the push step succeeds
+- **Website Deployment**: Automatically triggers `deploy-website.yml` when data is pushed
 
 ## Typical Workflow
 
 ### 1. Create a feature branch
+**Always work on feature branches, never directly on `main`:**
 ```bash
 git checkout -b feature/my-update
 ```
@@ -63,6 +69,7 @@ The `Test Automation` workflow runs automatically. Check the Actions tab to conf
 - **GitHub Actions**: Repository → Actions → select either workflow and review the logs.
 - **Logs in repo**: `analytics/logs/workflow_results.json` and any new files in `analytics/logs/`.
 - **Database**: Updated file stays at `analytics/database/etf_database.db`.
+- **Website Data**: Updated JSON files in `website/data/` are automatically deployed to GitHub Pages.
 
 ## Troubleshooting Tips
 
@@ -90,14 +97,6 @@ The `Test Automation` workflow runs automatically. Check the Actions tab to conf
 - **Secrets**  
   - The built-in `GITHUB_TOKEN` is enough today. Add more secrets only if future steps need them.
 
-## Maintenance Checklist
+## Airflow (Optional)
 
-- Review workflow runs a few times a week.
-- Trim large log or database files if the repo grows too much.
-- Update dependencies in `requirements.txt` when needed and make sure the test workflow passes.
-
-## Airflow Companion (Optional)
-
-If you want to rehearse the workflow locally with Apache Airflow, see `analytics/docs/airflow_setup.md`. The DAG runs the same scripts as the production automation and follows the identical weekday schedule.
-
-If something breaks, start with the newest workflow logs, fix locally, push a branch, and let `test_automation.yml` confirm the fix. Merge once it is green.
+For local testing with Airflow, see `analytics/docs/airflow_setup.md`. The DAG runs the same scripts as production automation.

@@ -1,6 +1,6 @@
 # Setup Guide
 
-This guide will help you set up the Stock Market Analytics project from scratch. The project tracks ETF prices, calculates 52-week metrics, and visualizes entry points from 52-week highs.
+Initial setup guide for the ETF Analytics project.
 
 ## Prerequisites
 
