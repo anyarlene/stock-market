@@ -38,9 +38,9 @@ with DAG(
     initialize_database = BashOperator(
         task_id="initialize_database",
         bash_command=(
-            f"cd {ANALYTICS_DIR} && "
-            "python database/init_db.py && "
-            "python database/load_symbols.py"
+            f"cd {PROJECT_ROOT} && "
+            "python analytics/database/init_db.py && "
+            "python analytics/database/load_symbols.py"
         ),
         env=env,
     )
