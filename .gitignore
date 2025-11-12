@@ -79,5 +79,4 @@ tatus --porcelain
 analytics/logs/*.json
 analytics/logs/*.log
 # Allow automation logs
-!analytics/logs/workflow_results.json
 !analytics/logs/automation.log
