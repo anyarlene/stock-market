@@ -37,15 +37,30 @@
                         
                         <div class="filter-group etf-selector-group">
                             <label for="etf-selector">Select ETF(s):</label>
-                            <div class="etf-selector-wrapper">
-                                <select id="etf-selector" multiple size="5" class="multi-select">
-                                    <!-- Populated by JavaScript -->
-                                </select>
-                                <div class="selected-etfs-display" id="selected-etfs-display">
-                                    <span class="no-selection">No ETFs selected</span>
+                            <div class="etf-filter-wrapper">
+                                <div class="etf-filter-trigger" id="etf-filter-trigger">
+                                    <span class="etf-filter-placeholder">Select ETFs...</span>
+                                    <span class="etf-filter-arrow">▼</span>
+                                </div>
+                                <div class="etf-filter-dropdown" id="etf-filter-dropdown">
+                                    <div class="etf-filter-search">
+                                        <input type="text" id="etf-filter-search" placeholder="Filter ETFs..." autocomplete="off">
+                                        <span class="etf-filter-clear" id="etf-filter-clear">×</span>
+                                    </div>
+                                    <div class="etf-filter-option select-all-option">
+                                        <input type="checkbox" id="etf-select-all">
+                                        <label for="etf-select-all">Select All</label>
+                                    </div>
+                                    <div class="etf-filter-list" id="etf-filter-list">
+                                        <!-- Populated by JavaScript -->
+                                        <div class="etf-loading">Loading ETFs...</div>
+                                    </div>
+                                </div>
+                                <div class="etf-selected-chips" id="etf-selected-chips">
+                                    <!-- Selected ETFs displayed as chips -->
                                 </div>
                             </div>
-                            <small class="help-text">Hold Ctrl (or Cmd on Mac) to select multiple ETFs</small>
+                            <small class="help-text">Click to open filter and select ETFs</small>
                         </div>
                         
                         <div class="filter-group">
@@ -104,10 +119,20 @@
                     <p class="info-text">
                         <strong>Historical Growth:</strong> Shows how your investment would have performed based on past ETF prices, looking back from your planned investment date for the selected period (e.g., if investment date is Jan 1, 2025 and you select 1 Year, it shows data from Jan 1, 2024 to Jan 1, 2025).
                         <br>
-                        <strong>Expected Projection:</strong> A forward-looking estimate assuming a 7% annual return, starting from your planned investment date and extending forward for the same period (e.g., Jan 1, 2025 to Jan 1, 2026 for 1 Year). This is a projection, not a guarantee - actual returns may vary.
+                        <strong>Expected Projection:</strong> A forward-looking estimate based on your selected scenario, starting from your planned investment date and extending forward for the same period (e.g., Jan 1, 2025 to Jan 1, 2026 for 1 Year). This is a projection, not a guarantee - actual returns may vary.
                     </p>
                 </div>
                 <div class="chart-controls">
+                    <div class="scenario-selector-group" style="margin-bottom: 1rem;">
+                        <label for="projection-scenario" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--text-primary, #1f2937);">Projection Scenario:</label>
+                        <select id="projection-scenario" class="scenario-select">
+                            <option value="conservative">Conservative (7% annual return)</option>
+                            <option value="moderate" selected>Moderate (10% annual return)</option>
+                            <option value="aggressive">Aggressive (12% annual return)</option>
+                            <option value="historical">Based on Historical ETF Performance</option>
+                        </select>
+                        <small class="help-text" style="display: block; margin-top: 0.25rem;">Select expected return scenario for projections</small>
+                    </div>
                     <div class="time-toggle-group">
                         <button class="time-toggle active" data-period="1y">1 Year</button>
                         <button class="time-toggle" data-period="5y">5 Years</button>

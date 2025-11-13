@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 Data Export Script for Website
 Exports ETF data from SQLite database to JSON files for the frontend.
@@ -10,6 +11,17 @@ import sys
 from datetime import datetime, timedelta
 from typing import Dict, List, Any
 import sqlite3
+
+# Fix Windows console encoding for emojis
+if sys.platform == 'win32':
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+        sys.stderr.reconfigure(encoding='utf-8')
+    except AttributeError:
+        # Python < 3.7 doesn't have reconfigure
+        import codecs
+        sys.stdout = codecs.getwriter('utf-8')(sys.stdout.buffer, 'strict')
+        sys.stderr = codecs.getwriter('utf-8')(sys.stderr.buffer, 'strict')
 
 # Add the analytics directory to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -175,15 +187,36 @@ def get_52week_metrics(db: DatabaseManager, symbol_id: int) -> Dict:
 
 def get_decrease_thresholds(db: DatabaseManager, symbol_id: int) -> List[Dict]:
     """Get decrease threshold data."""
-    query = """
-    SELECT calculation_date, high_52week_price, 
-           decrease_10_price, decrease_15_price, decrease_20_price, 
-           decrease_25_price, decrease_30_price
-    FROM decrease_thresholds 
-    WHERE symbol_id = ?
-    ORDER BY calculation_date DESC
-    LIMIT 1
-    """
+    # First, check if decrease_5_price column exists
+    db.connect()
+    try:
+        db.cursor.execute("PRAGMA table_info(decrease_thresholds)")
+        columns = [col[1] for col in db.cursor.fetchall()]
+        has_5_percent = 'decrease_5_price' in columns
+    finally:
+        db.disconnect()
+    
+    # Build query based on whether 5% column exists
+    if has_5_percent:
+        query = """
+        SELECT calculation_date, high_52week_price, 
+               decrease_5_price, decrease_10_price, decrease_15_price, decrease_20_price, 
+               decrease_25_price, decrease_30_price
+        FROM decrease_thresholds 
+        WHERE symbol_id = ?
+        ORDER BY calculation_date DESC
+        LIMIT 1
+        """
+    else:
+        query = """
+        SELECT calculation_date, high_52week_price, 
+               decrease_10_price, decrease_15_price, decrease_20_price, 
+               decrease_25_price, decrease_30_price
+        FROM decrease_thresholds 
+        WHERE symbol_id = ?
+        ORDER BY calculation_date DESC
+        LIMIT 1
+        """
     
     try:
         db.connect()
@@ -196,20 +229,34 @@ def get_decrease_thresholds(db: DatabaseManager, symbol_id: int) -> List[Dict]:
     if row:
         calculation_date = row[0]
         high_52week_price = row[1]
-        decreases = [
-            (10, row[2]),
-            (15, row[3]),
-            (20, row[4]),
-            (25, row[5]),
-            (30, row[6])
-        ]
+        
+        if has_5_percent:
+            decreases = [
+                (5, row[2]),
+                (10, row[3]),
+                (15, row[4]),
+                (20, row[5]),
+                (25, row[6]),
+                (30, row[7])
+            ]
+        else:
+            # Old schema without 5%
+            decreases = [
+                (10, row[2]),
+                (15, row[3]),
+                (20, row[4]),
+                (25, row[5]),
+                (30, row[6])
+            ]
         
         for percentage, threshold_price in decreases:
-            thresholds.append({
-                "percentage": percentage,
-                "thresholdPrice": float(threshold_price) if threshold_price is not None else None,
-                "calculationDate": calculation_date
-            })
+            # Only add if threshold_price is not None and not 0 (0 might indicate missing data)
+            if threshold_price is not None and threshold_price != 0:
+                thresholds.append({
+                    "percentage": percentage,
+                    "thresholdPrice": float(threshold_price),
+                    "calculationDate": calculation_date
+                })
     
     return thresholds
 

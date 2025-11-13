@@ -1,11 +1,31 @@
-/* Investment Strategy Page Styles */
+/* Investment Strategy Page Styles - Dark Theme */
+
+:root {
+    /* Dark theme colors */
+    --bg-primary: #0f172a;
+    --bg-secondary: #1e293b;
+    --bg-tertiary: #334155;
+    --text-primary: #f1f5f9;
+    --text-secondary: #cbd5e1;
+    --text-muted: #94a3b8;
+    --accent-primary: #667eea;
+    --accent-secondary: #764ba2;
+    --accent-hover: #7c3aed;
+    --border-color: #334155;
+    --border-hover: #475569;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --error: #ef4444;
+    --shadow: rgba(0, 0, 0, 0.3);
+    --shadow-lg: rgba(0, 0, 0, 0.5);
+}
 
 .page-nav {
     margin-top: 1rem;
 }
 
 .page-nav a {
-    color: white;
+    color: var(--text-primary);
     text-decoration: none;
     font-size: 0.9rem;
     opacity: 0.9;
@@ -18,18 +38,19 @@
 }
 
 .strategy-section {
-    background: white;
+    background: var(--bg-secondary);
     border-radius: 10px;
     padding: 2rem;
     margin-bottom: 2rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 6px var(--shadow);
+    border: 1px solid var(--border-color);
 }
 
 .strategy-section h2 {
-    color: #667eea;
+    color: var(--accent-primary);
     margin-bottom: 1.5rem;
     font-size: 1.8rem;
-    border-bottom: 2px solid #e2e8f0;
+    border-bottom: 2px solid var(--border-color);
     padding-bottom: 0.5rem;
 }
 
@@ -55,17 +76,18 @@
 
 .filter-group label {
     font-weight: 600;
-    color: #4a5568;
+    color: var(--text-primary);
     font-size: 0.9rem;
 }
 
 .filter-group select,
 .filter-group input {
     padding: 0.75rem;
-    border: 2px solid #e2e8f0;
+    border: 2px solid var(--border-color);
     border-radius: 6px;
     font-size: 1rem;
-    background: white;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
     width: 100%;
     transition: border-color 0.2s, box-shadow 0.2s;
 }
@@ -73,64 +95,211 @@
 .filter-group select:focus,
 .filter-group input:focus {
     outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
 }
 
 .etf-selector-group {
     position: relative;
 }
 
-.etf-selector-wrapper {
+/* Modern ETF Filter Dropdown */
+.etf-filter-wrapper {
     position: relative;
-}
-
-.multi-select {
     width: 100%;
-    min-height: 120px;
-    border: 2px solid #e2e8f0;
+}
+
+.etf-filter-trigger {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: var(--bg-tertiary);
+    border: 2px solid var(--border-color);
     border-radius: 6px;
-    padding: 0.5rem;
-    background: white;
-    transition: border-color 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-height: 44px;
 }
 
-.multi-select:focus {
-    outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+.etf-filter-trigger:hover {
+    border-color: var(--border-hover);
 }
 
-.selected-etfs-display {
-    margin-top: 0.75rem;
+.etf-filter-placeholder {
+    color: var(--text-secondary);
+    flex: 1;
+    text-align: left;
+}
+
+.etf-filter-arrow {
+    color: var(--text-muted);
+    transition: transform 0.2s;
+    font-size: 0.75rem;
+}
+
+.etf-filter-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px var(--shadow-lg);
+    z-index: 1000;
+    max-height: 400px;
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.etf-filter-dropdown.open {
+    display: flex;
+}
+
+.etf-filter-dropdown.open ~ .etf-filter-trigger .etf-filter-arrow,
+.etf-filter-wrapper:has(.etf-filter-dropdown.open) .etf-filter-arrow {
+    transform: rotate(180deg);
+}
+
+.etf-filter-search {
+    position: relative;
     padding: 0.75rem;
-    background: #f7fafc;
-    border-radius: 6px;
-    border: 1px solid #e2e8f0;
-    min-height: 60px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.etf-filter-search input {
+    width: 100%;
+    padding: 0.5rem 2rem 0.5rem 0.75rem;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+}
+
+.etf-filter-search input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+}
+
+.etf-filter-clear {
+    position: absolute;
+    right: 1.25rem;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    line-height: 1;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s;
+}
+
+.etf-filter-clear:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.etf-filter-option {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    transition: background 0.15s;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.etf-filter-option:last-child {
+    border-bottom: none;
+}
+
+.etf-filter-option:hover {
+    background: var(--bg-tertiary);
+}
+
+.etf-filter-option.hidden {
+    display: none;
+}
+
+.etf-filter-option.select-all-option {
+    font-weight: 600;
+    background: rgba(102, 126, 234, 0.05);
+    border-bottom: 2px solid var(--border-color);
+}
+
+.etf-filter-option input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin-right: 0.75rem;
+    cursor: pointer;
+    accent-color: var(--accent-primary);
+    flex-shrink: 0;
+}
+
+.etf-filter-option label {
+    cursor: pointer;
+    color: var(--text-primary);
+    flex: 1;
+    user-select: none;
+}
+
+.etf-filter-list {
+    max-height: 300px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.etf-filter-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.etf-filter-list::-webkit-scrollbar-track {
+    background: var(--bg-tertiary);
+}
+
+.etf-filter-list::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 3px;
+}
+
+.etf-filter-list::-webkit-scrollbar-thumb:hover {
+    background: var(--border-hover);
+}
+
+.etf-loading {
+    color: var(--text-muted);
+    text-align: center;
+    padding: 2rem;
+    font-style: italic;
+}
+
+/* Selected Chips */
+.etf-selected-chips {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
-    align-items: flex-start;
-}
-
-.selected-etfs-display .no-selection {
-    color: #9ca3af;
-    font-style: italic;
-    font-size: 0.9rem;
+    margin-top: 0.75rem;
+    min-height: 32px;
 }
 
 .etf-chip {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.5rem 0.75rem;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+    padding: 0.5rem 0.875rem;
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+    color: var(--text-primary);
     border-radius: 20px;
     font-size: 0.875rem;
     font-weight: 500;
-    box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
+    box-shadow: 0 2px 6px rgba(102, 126, 234, 0.3);
     animation: slideIn 0.3s ease-out;
 }
 
@@ -168,44 +337,45 @@
 }
 
 .help-text {
-    color: #6b7280;
+    color: var(--text-muted);
     font-size: 0.875rem;
     margin-top: 0.25rem;
 }
 
 .date-input {
     padding: 0.75rem;
-    border: 2px solid #e2e8f0;
+    border: 2px solid var(--border-color);
     border-radius: 6px;
     font-size: 1rem;
-    background: white;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
     max-width: 300px;
     font-family: inherit;
 }
 
 .date-input:focus {
     outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
 }
 
 .etf-investment-group {
-    background: #f7fafc;
+    background: var(--bg-tertiary);
     padding: 1rem;
     border-radius: 8px;
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--border-color);
     margin-bottom: 1rem;
 }
 
 .etf-investment-group label {
     font-weight: 600;
-    color: #4a5568;
+    color: var(--text-primary);
     display: block;
     margin-bottom: 0.5rem;
 }
 
 .etf-investment-group .etf-name {
-    color: #667eea;
+    color: var(--accent-primary);
     font-weight: 600;
 }
 
@@ -269,11 +439,12 @@
 }
 
 .total-card {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+    color: var(--text-primary);
     padding: 1.5rem;
     border-radius: 10px;
     margin-top: 1rem;
+    box-shadow: 0 4px 12px var(--shadow);
 }
 
 .total-card h3 {
@@ -315,20 +486,21 @@
 }
 
 .etf-table thead {
-    background: #f7fafc;
+    background: var(--bg-tertiary);
 }
 
 .etf-table th {
     padding: 1rem;
     text-align: left;
     font-weight: 600;
-    color: #4a5568;
-    border-bottom: 2px solid #e2e8f0;
+    color: var(--text-primary);
+    border-bottom: 2px solid var(--border-color);
 }
 
 .etf-table td {
     padding: 1rem;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-secondary);
 }
 
 .etf-table tbody tr {
@@ -337,12 +509,12 @@
 }
 
 .etf-table tbody tr:hover {
-    background: #f7fafc;
+    background: var(--bg-tertiary);
 }
 
 .etf-table tbody tr.selected {
-    background: #e0e7ff;
-    border-left: 4px solid #667eea;
+    background: rgba(102, 126, 234, 0.15);
+    border-left: 4px solid var(--accent-primary);
 }
 
 .region-badge {
@@ -368,10 +540,11 @@
     position: relative;
     height: 400px;
     margin-top: 1rem;
-    background: white;
+    background: var(--bg-tertiary);
     border-radius: 10px;
     padding: 1.5rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 4px var(--shadow);
+    border: 1px solid var(--border-color);
 }
 
 #growthChart {
@@ -381,22 +554,22 @@
 
 /* Projection Info */
 .projection-info {
-    background: #f0f9ff;
-    border-left: 4px solid #667eea;
+    background: rgba(102, 126, 234, 0.1);
+    border-left: 4px solid var(--accent-primary);
     padding: 1rem 1.5rem;
     border-radius: 6px;
     margin-bottom: 1rem;
 }
 
 .projection-info .info-text {
-    color: #4a5568;
+    color: var(--text-secondary);
     font-size: 0.9rem;
     line-height: 1.6;
     margin: 0;
 }
 
 .projection-info .info-text strong {
-    color: #667eea;
+    color: var(--accent-primary);
 }
 
 /* Chart Controls */
@@ -409,26 +582,45 @@
     gap: 0.5rem;
 }
 
+.scenario-select {
+    padding: 0.75rem;
+    border: 2px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 1rem;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    width: 100%;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.scenario-select:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+}
+
 .time-toggle {
     padding: 0.5rem 1rem;
-    border: 2px solid #e2e8f0;
-    background: white;
+    border: 2px solid var(--border-color);
+    background: var(--bg-tertiary);
     border-radius: 6px;
     cursor: pointer;
     font-weight: 600;
-    color: #4a5568;
+    color: var(--text-secondary);
     transition: all 0.2s;
 }
 
 .time-toggle:hover {
-    border-color: #667eea;
-    color: #667eea;
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+    background: var(--bg-secondary);
 }
 
 .time-toggle.active {
-    background: #667eea;
-    color: white;
-    border-color: #667eea;
+    background: var(--accent-primary);
+    color: var(--text-primary);
+    border-color: var(--accent-primary);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
 }
 
 /* Risk Cards */
