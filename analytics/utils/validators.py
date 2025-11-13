@@ -26,9 +26,9 @@ def validate_isin(isin: str) -> Tuple[bool, str]:
     if not isin_pattern.match(isin):
         return False, "ISIN must be 12 characters: 2 letters + 9 alphanumeric + 1 check digit"
     
-    # Check country code (IE for Irish ETFs)
-    if not isin.startswith('IE'):
-        return False, "ISIN must start with 'IE' for Irish ETFs"
+    # Check country code (IE for Irish UCITS ETFs, US for US-listed ETFs)
+    if not (isin.startswith('IE') or isin.startswith('US')):
+        return False, "ISIN must start with 'IE' (UCITS) or 'US' (US-listed)"
     
     return True, ""
 
@@ -63,9 +63,16 @@ def validate_symbol_data(symbol: Dict[str, Any]) -> Tuple[bool, List[str]]:
     if symbol['asset_type'] not in valid_asset_types:
         errors.append(f"Invalid asset_type. Must be one of: {valid_asset_types}")
     
-    # Validate exchange
-    if symbol['exchange'] != 'LSE':
-        errors.append("Currently only supporting LSE exchange")
+    # Validate exchange (LSE for UCITS, NYSE/NASDAQ for US-listed)
+    valid_exchanges = ['LSE', 'NYSE', 'NASDAQ']
+    if symbol['exchange'] not in valid_exchanges:
+        errors.append(f"Invalid exchange. Must be one of: {valid_exchanges}")
+    
+    # Validate ISIN and exchange compatibility
+    if symbol['isin'].startswith('IE') and symbol['exchange'] != 'LSE':
+        errors.append("Irish ISINs (UCITS) must use LSE exchange")
+    elif symbol['isin'].startswith('US') and symbol['exchange'] not in ['NYSE', 'NASDAQ']:
+        errors.append("US ISINs must use NYSE or NASDAQ exchange")
     
     # Validate currency
     valid_currencies = ['USD', 'GBP', 'EUR']

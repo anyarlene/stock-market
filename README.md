@@ -12,8 +12,14 @@ ETF analytics platform with automated market data updates, currency conversion, 
 
 ## Supported ETFs
 
+### UCITS ETFs (European-listed)
 - Vanguard S&P 500 UCITS ETF (VUAA.L) - USD
 - iShares NASDAQ 100 UCITS ETF (CNDX.L) - GBP
+
+### US-listed ETFs
+- Vanguard S&P 500 ETF (VOO) - USD
+- Vanguard Total Stock Market ETF (VTI) - USD
+- Invesco QQQ Trust (QQQ) - USD
 
 ## Quick Start
 
@@ -46,6 +52,14 @@ python analytics/enhanced_workflow.py --step export      # Export website data
 ### View Dashboard
 
 Open `website/index.html` in your browser.
+
+### Investment Strategy Planner
+
+Access the interactive investment strategy planner at `website/investment-strategy.html` to:
+- Plan lump-sum investments by region
+- View ETF purchase plans with real-time prices
+- Analyze historical growth and projections
+- Assess risk scenarios and tax implications
 
 ## Automation
 

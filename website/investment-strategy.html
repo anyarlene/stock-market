@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Investment Strategy Planner - ETF Analytics</title>
+    <link rel="stylesheet" href="css/style.css?v=2024.01.15">
+    <link rel="stylesheet" href="css/investment-strategy.css?v=2024.01.15">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Investment Strategy Planner</h1>
+            <p class="subtitle">Plan your ETF investments with real-time data and projections</p>
+            <nav class="page-nav">
+                <a href="index.html">← Back to Dashboard</a>
+            </nav>
+        </header>
+
+        <main>
+            <!-- Section 1: Investment Inputs -->
+            <section class="strategy-section" id="investment-inputs">
+                <h2>Investment Inputs</h2>
+                <div class="investment-form">
+                    <div class="filters-row">
+                        <div class="filter-group">
+                            <label for="country-selector">Country:</label>
+                            <select id="country-selector">
+                                <option value="USA">USA</option>
+                                <option value="Australia">Australia</option>
+                                <option value="Germany">Germany</option>
+                                <option value="France">France</option>
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group etf-selector-group">
+                            <label for="etf-selector">Select ETF(s):</label>
+                            <div class="etf-selector-wrapper">
+                                <select id="etf-selector" multiple size="5" class="multi-select">
+                                    <!-- Populated by JavaScript -->
+                                </select>
+                                <div class="selected-etfs-display" id="selected-etfs-display">
+                                    <span class="no-selection">No ETFs selected</span>
+                                </div>
+                            </div>
+                            <small class="help-text">Hold Ctrl (or Cmd on Mac) to select multiple ETFs</small>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label for="investment-date">Planned Investment Date:</label>
+                            <input type="date" id="investment-date" class="date-input">
+                            <small class="help-text">Select when you plan to make this investment</small>
+                        </div>
+                    </div>
+                    
+                    <div id="etf-investment-inputs">
+                        <!-- Dynamically generated per selected ETF -->
+                    </div>
+                    
+                    <div class="total-card">
+                        <h3>Investment Summary</h3>
+                        <div class="total-breakdown">
+                            <div class="total-item">
+                                <span class="total-label">Total Invested:</span>
+                                <span class="total-value" id="total-invested">€0</span>
+                            </div>
+                            <div class="total-item">
+                                <span class="total-label">Planned Date:</span>
+                                <span class="total-value" id="display-investment-date">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 2: ETF Purchase Plan -->
+            <section class="strategy-section" id="etf-purchase-plan">
+                <h2>ETF Purchase Plan</h2>
+                <div class="etf-table-container">
+                    <table class="etf-table" id="etf-table">
+                        <thead>
+                            <tr>
+                                <th>ETF</th>
+                                <th>Region</th>
+                                <th>Target Amount</th>
+                                <th>Latest Price</th>
+                                <th>Units to Buy</th>
+                                <th id="current-value-header">Current Value</th>
+                            </tr>
+                        </thead>
+                        <tbody id="etf-table-body">
+                            <!-- Populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Section 3: Historical Growth & Expected Projection -->
+            <section class="strategy-section" id="growth-projection">
+                <h2>Historical Growth & Expected Projection</h2>
+                <div class="projection-info">
+                    <p class="info-text">
+                        <strong>Historical Growth:</strong> Shows how your investment would have performed based on past ETF prices, looking back from your planned investment date for the selected period (e.g., if investment date is Jan 1, 2025 and you select 1 Year, it shows data from Jan 1, 2024 to Jan 1, 2025).
+                        <br>
+                        <strong>Expected Projection:</strong> A forward-looking estimate assuming a 7% annual return, starting from your planned investment date and extending forward for the same period (e.g., Jan 1, 2025 to Jan 1, 2026 for 1 Year). This is a projection, not a guarantee - actual returns may vary.
+                    </p>
+                </div>
+                <div class="chart-controls">
+                    <div class="time-toggle-group">
+                        <button class="time-toggle active" data-period="1y">1 Year</button>
+                        <button class="time-toggle" data-period="5y">5 Years</button>
+                        <button class="time-toggle" data-period="10y">10 Years</button>
+                        <button class="time-toggle" data-period="20y">20 Years</button>
+                    </div>
+                    <small class="help-text" style="margin-top: 0.5rem; display: block;">Select how far back to show historical data and how far forward to project from your planned investment date</small>
+                </div>
+                <div class="chart-container">
+                    <canvas id="growthChart"></canvas>
+                </div>
+            </section>
+
+            <!-- Section 4: Risk & Scenario Snapshot -->
+            <section class="strategy-section" id="risk-snapshot">
+                <h2>Risk & Scenario Snapshot</h2>
+                <div class="risk-cards">
+                    <div class="risk-card">
+                        <div class="risk-icon drawdown">📉</div>
+                        <h3>Worst Historical Drawdown</h3>
+                        <div class="risk-value" id="worst-drawdown">-</div>
+                        <div class="risk-year" id="worst-drawdown-year"></div>
+                        <p class="risk-description">The biggest drop from a high point to a low point. Shows how much your investment could lose during market downturns.</p>
+                    </div>
+                    
+                    <div class="risk-card">
+                        <div class="risk-icon volatility">📊</div>
+                        <h3>Annual Volatility</h3>
+                        <div class="risk-value" id="annual-volatility">-</div>
+                        <p class="risk-description">How much the price moves up and down each year. Higher volatility means bigger price swings.</p>
+                    </div>
+                    
+                    <div class="risk-card">
+                        <div class="risk-icon stress">⚠️</div>
+                        <h3>Stress Test (-30% Market Drop)</h3>
+                        <div class="risk-value" id="stress-test">-</div>
+                        <p class="risk-description">Shows what your portfolio would be worth if the market dropped 30%. Helps you prepare for worst-case scenarios.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 5: Tax & Action Checklist -->
+            <section class="strategy-section" id="tax-checklist">
+                <h2>Tax & Action Checklist</h2>
+                <div class="tax-panels">
+                    <div class="tax-panel" id="tax-panel-us-container">
+                        <button class="tax-panel-header" onclick="toggleTaxPanel('us')">
+                            <span>United States</span>
+                            <span class="toggle-icon">▼</span>
+                        </button>
+                        <div class="tax-panel-content" id="tax-panel-us">
+                            <div class="tax-summary">
+                                <div class="tax-estimate">
+                                    <strong>Estimated tax if sold today:</strong>
+                                    <span id="tax-estimate-us">$0</span>
+                                </div>
+                            </div>
+                            <div class="tax-notes">
+                                <h4>Tax Rules:</h4>
+                                <ul>
+                                    <li>Long-term capital gains: 0%, 15%, or 20% depending on income</li>
+                                    <li>Holding period: 1+ year for long-term rates</li>
+                                    <li>Annual exemption: $3,000 capital loss deduction</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="tax-panel" id="tax-panel-au-container">
+                        <button class="tax-panel-header" onclick="toggleTaxPanel('au')">
+                            <span>Australia</span>
+                            <span class="toggle-icon">▼</span>
+                        </button>
+                        <div class="tax-panel-content" id="tax-panel-au">
+                            <div class="tax-summary">
+                                <div class="tax-estimate">
+                                    <strong>Estimated tax if sold today:</strong>
+                                    <span id="tax-estimate-au">$0</span>
+                                </div>
+                            </div>
+                            <div class="tax-notes">
+                                <h4>Tax Rules:</h4>
+                                <ul>
+                                    <li>Capital gains: 50% discount if held >12 months</li>
+                                    <li>Then taxed at your income tax rate</li>
+                                    <li>No capital gains tax on primary residence</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="tax-panel" id="tax-panel-de-container">
+                        <button class="tax-panel-header" onclick="toggleTaxPanel('de')">
+                            <span>Germany</span>
+                            <span class="toggle-icon">▼</span>
+                        </button>
+                        <div class="tax-panel-content" id="tax-panel-de">
+                            <div class="tax-summary">
+                                <div class="tax-estimate">
+                                    <strong>Estimated tax if sold today:</strong>
+                                    <span id="tax-estimate-de">€0</span>
+                                </div>
+                            </div>
+                            <div class="tax-notes">
+                                <h4>Tax Rules:</h4>
+                                <ul>
+                                    <li>Capital gains: 26.375% (25% + solidarity surcharge)</li>
+                                    <li>Tax-free allowance: €801 per year (single) or €1,602 (married)</li>
+                                    <li>Holding period: No minimum for ETFs</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="tax-panel" id="tax-panel-fr-container">
+                        <button class="tax-panel-header" onclick="toggleTaxPanel('fr')">
+                            <span>France</span>
+                            <span class="toggle-icon">▼</span>
+                        </button>
+                        <div class="tax-panel-content" id="tax-panel-fr">
+                            <div class="tax-summary">
+                                <div class="tax-estimate">
+                                    <strong>Estimated tax if sold today:</strong>
+                                    <span id="tax-estimate-fr">€0</span>
+                                </div>
+                            </div>
+                            <div class="tax-notes">
+                                <h4>Tax Rules:</h4>
+                                <ul>
+                                    <li>Capital gains: 30% flat rate (PFU - Prélèvement Forfaitaire Unique)</li>
+                                    <li>Or progressive income tax rates (if lower)</li>
+                                    <li>Tax-free allowance: None for securities</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="action-checklist">
+                    <h3>Next Steps</h3>
+                    <ul class="checklist">
+                        <li>
+                            <input type="checkbox" id="check-1">
+                            <label for="check-1">Confirm lump-sum investment amounts</label>
+                        </li>
+                        <li>
+                            <input type="checkbox" id="check-2">
+                            <label for="check-2">Review ETF purchase plan and execute trades</label>
+                        </li>
+                        <li>
+                            <input type="checkbox" id="check-3">
+                            <label for="check-3">Set up annual review reminder</label>
+                        </li>
+                        <li>
+                            <input type="checkbox" id="check-4">
+                            <label for="check-4">Document investment strategy and goals</label>
+                        </li>
+                    </ul>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>This is an independent open data visualization project. Data is sourced from publicly available information.</p>
+        </footer>
+    </div>
+
+    <script src="js/investment-strategy.js"></script>
+</body>
+</html>
+
