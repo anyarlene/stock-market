@@ -44,19 +44,17 @@ jobs:
           echo "Database directory:"
           ls -la analytics/database/
       
-      - name: Check website data exists
+      - name: Generate website data
         run: |
-          if [ ! -f "website/data/etf_data.json" ]; then
-            echo "Website data not found, generating..."
-            python -m analytics.database.init_db || echo "Database already exists"
-            python -m analytics.database.load_symbols || echo "Symbols already loaded"
-            python -m analytics.etl.market_data_fetcher
-            python -m analytics.etl.data_exporter
-          else
-            echo "Website data already exists, using existing files"
-          fi
+          echo "Generating website data files..."
+          python -m analytics.database.init_db || echo "Database already exists"
+          python -m analytics.database.load_symbols || echo "Symbols already loaded"
+          python -m analytics.etl.market_data_fetcher || echo "Market data fetch completed"
+          python -m analytics.etl.data_exporter || echo "Data export completed"
           echo "Checking generated files:"
           ls -la website/data/
+          echo "Verifying symbols.json contains all ETFs:"
+          cat website/data/symbols.json
       
       - name: Setup Pages
         uses: actions/configure-pages@v4
