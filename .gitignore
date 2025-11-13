@@ -37,8 +37,6 @@ wheels/
 # Database
 *.db
 *.sqlite3
-# Allow database for automation
-!analytics/database/etf_database.db
 
 # Logs
 *.log
