@@ -85,17 +85,126 @@ class InvestmentStrategy {
     }
 
     populateETFSelector() {
-        const selector = document.getElementById('etf-selector');
-        selector.innerHTML = '';
+        const listContainer = document.getElementById('etf-filter-list');
+        if (!listContainer) return;
+        
+        listContainer.innerHTML = '';
+        
+        if (this.symbols.length === 0) {
+            listContainer.innerHTML = '<div class="etf-loading">No ETFs available</div>';
+            return;
+        }
+        
+        // Store filtered symbols for search functionality
+        this.filteredSymbols = [...this.symbols];
         
         this.symbols.forEach(symbol => {
-            const option = document.createElement('option');
-            option.value = symbol.ticker;
-            option.textContent = `${symbol.ticker} - ${symbol.name}`;
-            selector.appendChild(option);
+            const option = document.createElement('div');
+            option.className = 'etf-filter-option';
+            option.dataset.ticker = symbol.ticker;
+            option.dataset.searchText = `${symbol.ticker} ${symbol.name}`.toLowerCase();
+            
+            const isSelected = this.selectedETFs.includes(symbol.ticker);
+            
+            option.innerHTML = `
+                <input type="checkbox" ${isSelected ? 'checked' : ''} id="etf-check-${symbol.ticker}" data-ticker="${symbol.ticker}">
+                <label for="etf-check-${symbol.ticker}">${symbol.ticker} - ${symbol.name}</label>
+            `;
+            
+            // Checkbox handler
+            const checkbox = option.querySelector('input[type="checkbox"]');
+            checkbox.addEventListener('change', (e) => {
+                e.stopPropagation();
+                this.toggleETF(symbol.ticker);
+            });
+            
+            listContainer.appendChild(option);
         });
         
-        this.updateSelectedETFsDisplay();
+        // Update UI
+        this.updateETFSelectorUI();
+        this.updateSelectedChips();
+    }
+
+    toggleETF(ticker) {
+        if (this.selectedETFs.includes(ticker)) {
+            this.selectedETFs = this.selectedETFs.filter(t => t !== ticker);
+        } else {
+            this.selectedETFs.push(ticker);
+        }
+        this.updateETFSelectorUI();
+        this.updateSelectedChips();
+        this.updateInvestmentInputs();
+        this.updateTotals();
+        this.populateETFTable();
+        this.calculateRiskMetrics();
+        this.updateTaxEstimates();
+    }
+
+    updateETFSelectorUI() {
+        // Update individual checkboxes
+        document.querySelectorAll('#etf-filter-list .etf-filter-option input[type="checkbox"]').forEach(checkbox => {
+            const ticker = checkbox.dataset.ticker;
+            checkbox.checked = this.selectedETFs.includes(ticker);
+        });
+        
+        // Update Select All checkbox
+        const selectAllCheckbox = document.getElementById('etf-select-all');
+        if (selectAllCheckbox) {
+            const visibleOptions = Array.from(document.querySelectorAll('#etf-filter-list .etf-filter-option:not(.hidden)'));
+            const visibleSelected = visibleOptions.filter(opt => {
+                const ticker = opt.dataset.ticker;
+                return this.selectedETFs.includes(ticker);
+            });
+            
+            if (visibleSelected.length === 0) {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = false;
+            } else if (visibleSelected.length === visibleOptions.length) {
+                selectAllCheckbox.checked = true;
+                selectAllCheckbox.indeterminate = false;
+            } else {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = true;
+            }
+        }
+        
+        // Update placeholder text
+        const placeholder = document.querySelector('.etf-filter-placeholder');
+        if (placeholder) {
+            if (this.selectedETFs.length === 0) {
+                placeholder.textContent = 'Select ETFs...';
+            } else {
+                placeholder.textContent = `${this.selectedETFs.length} ETF${this.selectedETFs.length > 1 ? 's' : ''} selected`;
+            }
+        }
+    }
+
+    updateSelectedChips() {
+        const chipsContainer = document.getElementById('etf-selected-chips');
+        if (!chipsContainer) return;
+        
+        chipsContainer.innerHTML = '';
+        
+        this.selectedETFs.forEach(ticker => {
+            const symbol = this.symbols.find(s => s.ticker === ticker);
+            if (!symbol) return;
+            
+            const chip = document.createElement('div');
+            chip.className = 'etf-chip';
+            chip.innerHTML = `
+                <span>${symbol.ticker}</span>
+                <span class="chip-remove" data-ticker="${ticker}">×</span>
+            `;
+            
+            // Remove chip on click
+            chip.querySelector('.chip-remove').addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.removeETF(ticker);
+            });
+            
+            chipsContainer.appendChild(chip);
+        });
     }
 
     updateSelectedETFsDisplay() {
@@ -131,16 +240,8 @@ class InvestmentStrategy {
 
     removeETF(ticker) {
         this.selectedETFs = this.selectedETFs.filter(t => t !== ticker);
-        
-        // Update select element
-        const selector = document.getElementById('etf-selector');
-        Array.from(selector.options).forEach(option => {
-            if (option.value === ticker) {
-                option.selected = false;
-            }
-        });
-        
-        this.updateSelectedETFsDisplay();
+        this.updateETFSelectorUI();
+        this.updateSelectedChips();
         this.updateInvestmentInputs();
         this.updateTotals();
         this.populateETFTable();
@@ -162,6 +263,106 @@ class InvestmentStrategy {
         // The currency will be determined by country
     }
 
+    setupETFFilterHandlers() {
+        const trigger = document.getElementById('etf-filter-trigger');
+        const dropdown = document.getElementById('etf-filter-dropdown');
+        const searchInput = document.getElementById('etf-filter-search');
+        const clearBtn = document.getElementById('etf-filter-clear');
+        const selectAllCheckbox = document.getElementById('etf-select-all');
+        
+        if (!trigger || !dropdown) return;
+        
+        // Toggle dropdown
+        trigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = dropdown.classList.contains('open');
+            dropdown.classList.toggle('open');
+            const arrow = trigger.querySelector('.etf-filter-arrow');
+            if (arrow) {
+                if (isOpen) {
+                    arrow.style.transform = 'rotate(0deg)';
+                } else {
+                    arrow.style.transform = 'rotate(180deg)';
+                    if (searchInput) searchInput.focus();
+                }
+            }
+        });
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!dropdown.contains(e.target) && !trigger.contains(e.target)) {
+                dropdown.classList.remove('open');
+                const arrow = trigger.querySelector('.etf-filter-arrow');
+                if (arrow) {
+                    arrow.style.transform = 'rotate(0deg)';
+                }
+            }
+        });
+        
+        // Search functionality
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase().trim();
+                this.filterETFList(searchTerm);
+            });
+        }
+        
+        // Clear search
+        if (clearBtn) {
+            clearBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (searchInput) {
+                    searchInput.value = '';
+                    this.filterETFList('');
+                }
+            });
+        }
+        
+        // Select All functionality
+        if (selectAllCheckbox) {
+            selectAllCheckbox.addEventListener('change', (e) => {
+                const visibleOptions = Array.from(document.querySelectorAll('#etf-filter-list .etf-filter-option:not(.hidden)'));
+                const visibleTickers = visibleOptions.map(opt => opt.dataset.ticker);
+                
+                if (e.target.checked) {
+                    // Add all visible ETFs
+                    visibleTickers.forEach(ticker => {
+                        if (!this.selectedETFs.includes(ticker)) {
+                            this.selectedETFs.push(ticker);
+                        }
+                    });
+                } else {
+                    // Remove all visible ETFs
+                    this.selectedETFs = this.selectedETFs.filter(t => !visibleTickers.includes(t));
+                }
+                
+                this.updateETFSelectorUI();
+                this.updateSelectedChips();
+                this.updateInvestmentInputs();
+                this.updateTotals();
+                this.populateETFTable();
+                this.calculateRiskMetrics();
+                this.updateTaxEstimates();
+            });
+        }
+    }
+
+    filterETFList(searchTerm) {
+        const options = document.querySelectorAll('#etf-filter-list .etf-filter-option');
+        
+        options.forEach(option => {
+            const searchText = option.dataset.searchText || '';
+            if (searchTerm === '' || searchText.includes(searchTerm)) {
+                option.classList.remove('hidden');
+            } else {
+                option.classList.add('hidden');
+            }
+        });
+        
+        // Update Select All state after filtering
+        this.updateETFSelectorUI();
+    }
+
     setupEventListeners() {
         // Country selector
         document.getElementById('country-selector').addEventListener('change', (e) => {
@@ -174,18 +375,8 @@ class InvestmentStrategy {
             this.updateTaxEstimates();
         });
 
-        // ETF selector (multi-select)
-        const etfSelector = document.getElementById('etf-selector');
-        etfSelector.addEventListener('change', (e) => {
-            const selected = Array.from(e.target.selectedOptions).map(opt => opt.value);
-            this.selectedETFs = selected;
-            this.updateSelectedETFsDisplay();
-            this.updateInvestmentInputs();
-            this.updateTotals();
-            this.populateETFTable();
-            this.calculateRiskMetrics();
-            this.updateTaxEstimates();
-        });
+        // ETF filter dropdown handlers
+        this.setupETFFilterHandlers();
 
         // Investment date selector
         const dateInput = document.getElementById('investment-date');
@@ -216,6 +407,71 @@ class InvestmentStrategy {
                 this.updateGrowthChart(e.target.dataset.period);
             });
         });
+
+        // Projection scenario selector
+        const scenarioSelector = document.getElementById('projection-scenario');
+        if (scenarioSelector) {
+            scenarioSelector.addEventListener('change', (e) => {
+                const activePeriod = document.querySelector('.time-toggle.active')?.dataset.period || '1y';
+                this.updateGrowthChart(activePeriod);
+            });
+        }
+    }
+
+    getProjectionScenario() {
+        const selector = document.getElementById('projection-scenario');
+        return selector ? selector.value : 'moderate';
+    }
+
+    getCAGRForScenario(scenario, etf = null) {
+        switch(scenario) {
+            case 'conservative':
+                return 0.07; // 7%
+            case 'moderate':
+                return 0.10; // 10% - more realistic for S&P 500 long-term
+            case 'aggressive':
+                return 0.12; // 12%
+            case 'historical':
+                // Calculate based on actual ETF historical performance
+                if (etf && etf.data && etf.data.priceData && etf.data.priceData.length > 0) {
+                    return this.calculateHistoricalCAGR(etf);
+                }
+                return 0.10; // Fallback to moderate
+            default:
+                return 0.10; // Default to moderate
+        }
+    }
+
+    calculateHistoricalCAGR(etf) {
+        if (!etf.data || !etf.data.priceData || etf.data.priceData.length < 2) {
+            return 0.10; // Fallback
+        }
+
+        const priceData = etf.data.priceData;
+        const priceField = priceData[0].hasOwnProperty('close_eur') ? 'close_eur' : 'close';
+        
+        // Get first and last prices
+        const firstPrice = priceData[0][priceField];
+        const lastPrice = priceData[priceData.length - 1][priceField];
+        
+        if (!firstPrice || !lastPrice || firstPrice <= 0) {
+            return 0.10; // Fallback
+        }
+
+        // Calculate number of years
+        const firstDate = new Date(priceData[0].date);
+        const lastDate = new Date(priceData[priceData.length - 1].date);
+        const years = (lastDate - firstDate) / (1000 * 60 * 60 * 24 * 365.25);
+        
+        if (years <= 0) {
+            return 0.10; // Fallback
+        }
+
+        // CAGR formula: (End Value / Start Value)^(1/Years) - 1
+        const cagr = Math.pow(lastPrice / firstPrice, 1 / years) - 1;
+        
+        // Cap at reasonable values (between 0% and 30%)
+        return Math.max(0, Math.min(0.30, cagr));
     }
 
     updateInvestmentInputs() {
@@ -572,8 +828,11 @@ class InvestmentStrategy {
             lastHistoricalDate: historicalData.length > 0 ? historicalData[historicalData.length - 1].x : 'none'
         });
         
+        // Get projection scenario
+        const scenario = this.getProjectionScenario();
+        
         // Projection should start from planned investment date and extend forward for the same period
-        const projectionData = this.generateProjectionDataForETF(etf, investmentAmount, historicalYears, historicalData, countryCurrency, investmentDate);
+        const projectionData = this.generateProjectionDataForETF(etf, investmentAmount, historicalYears, historicalData, countryCurrency, investmentDate, scenario);
 
         // Validate projection data dates are correct
         if (projectionData.length > 0) {
@@ -921,7 +1180,7 @@ class InvestmentStrategy {
         return data;
     }
 
-    generateProjectionDataForETF(etf, initialAmount, years, historicalData, targetCurrency = 'EUR', investmentDate = null) {
+    generateProjectionDataForETF(etf, initialAmount, years, historicalData, targetCurrency = 'EUR', investmentDate = null, scenario = 'moderate') {
         const data = [];
         
         // Start projection from the planned investment date (ALWAYS use investment date, not historical data end date)
@@ -981,7 +1240,8 @@ class InvestmentStrategy {
             }
         }
         
-        const expectedCAGR = 0.07; // 7% expected annual return (Compound Annual Growth Rate)
+        // Get CAGR based on selected scenario
+        const expectedCAGR = this.getCAGRForScenario(scenario, etf);
         
         // Generate projection data starting from planned investment date, extending forward
         // Project for the same number of years as the historical lookback period

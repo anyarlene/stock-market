@@ -113,13 +113,38 @@
                 
                 <div class="thresholds-section">
                     <h3>Entry Points from 52-Week High</h3>
-                    <div class="thresholds-grid" id="thresholds-grid">
-                        <!-- Threshold cards will be populated by JavaScript -->
+                    <div class="info-box">
+                        <p class="info-text">
+                            <strong>Status Explanation:</strong> 
+                            <span class="status-badge reached" style="display: inline-block; margin: 0 0.5rem;">✓ Reached</span> means the current price has dropped to or below this entry point (good time to consider buying). 
+                            <span class="status-badge pending" style="display: inline-block; margin: 0 0.5rem;">Pending</span> means the price hasn't dropped to this level yet (waiting for the price to reach this entry point).
+                        </p>
+                    </div>
+                    <div class="table-container">
+                        <table class="entry-points-table" id="entry-points-table">
+                            <thead>
+                                <tr>
+                                    <th>% Drop</th>
+                                    <th>Entry Price</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="thresholds-table-body">
+                                <!-- Table rows will be populated by JavaScript -->
+                            </tbody>
+                        </table>
                     </div>
                 </div>
                 
                 <div class="profit-targets-section">
                     <h3>Profit Targets from Entry Points</h3>
+                    <div class="info-box">
+                        <p class="info-text">
+                            <strong>Status Explanation:</strong> 
+                            <span class="status-badge reached" style="display: inline-block; margin: 0 0.5rem;">✓ Reached</span> means the current price has reached or exceeded this profit target (you could consider taking profits). 
+                            <span class="status-badge pending" style="display: inline-block; margin: 0 0.5rem;">Pending</span> means the price hasn't reached this profit target yet (still waiting for the price to rise to this level).
+                        </p>
+                    </div>
                     <div class="profit-targets-filter">
                         <label for="threshold-filter">Select Entry Point:</label>
                         <select id="threshold-filter">
@@ -127,8 +152,20 @@
                         </select>
                         <button id="clear-filter" class="clear-filter-btn">Clear</button>
                     </div>
-                    <div class="profit-targets-grid" id="profit-targets-grid">
-                        <!-- Profit target cards will be populated by JavaScript -->
+                    <div class="table-container">
+                        <table class="profit-targets-table" id="profit-targets-table">
+                            <thead>
+                                <tr>
+                                    <th>% Profit</th>
+                                    <th>Target Price</th>
+                                    <th>Entry Price</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="profit-targets-table-body">
+                                <!-- Table rows will be populated by JavaScript -->
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>

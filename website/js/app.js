@@ -24,19 +24,38 @@ class ETFDashboard {
 
     async init() {
         try {
+            console.log('🚀 Starting dashboard initialization...');
+            this.hideError(); // Clear any previous errors
+            
             await this.loadSymbols();
+            console.log(`✅ Loaded ${this.symbols.length} symbols`);
+            
             this.setupEventListeners();
+            console.log('✅ Event listeners set up');
+            
             this.hideLoading();
             
             // Load first ETF by default if available
             if (this.symbols.length > 0) {
                 const firstSymbol = this.symbols[0];
-                document.getElementById('etf-selector').value = firstSymbol.ticker;
-                await this.loadETFData(firstSymbol.ticker);
+                console.log(`📊 Loading default ETF: ${firstSymbol.ticker}`);
+                const selector = document.getElementById('etf-selector');
+                if (selector) {
+                    selector.value = firstSymbol.ticker;
+                    await this.loadETFData(firstSymbol.ticker);
+                    console.log('✅ Dashboard initialized successfully');
+                    this.hideError(); // Ensure error is cleared after successful load
+                } else {
+                    throw new Error('ETF selector element not found');
+                }
+            } else {
+                console.warn('⚠️ No symbols available');
+                this.showError('No ETFs available. Please check data files.');
             }
         } catch (error) {
-            console.error('Error initializing dashboard:', error);
-            this.showError('Failed to initialize dashboard');
+            console.error('❌ Error initializing dashboard:', error);
+            console.error('Error stack:', error.stack);
+            this.showError(`Failed to initialize dashboard: ${error.message}`);
         }
     }
 
@@ -237,8 +256,10 @@ class ETFDashboard {
             this.updateUI();
             this.initializeTimeSlider(); // Initialize time slider
             this.createChart(); // Default to EUR
+            this.hideError(); // Clear any previous errors on successful load
         } catch (error) {
             console.error('❌ Error loading individual ETF data:', error);
+            console.error('Error details:', error.stack);
             
             // Fallback: try loading from combined data file
             try {
@@ -264,23 +285,35 @@ class ETFDashboard {
                 // Update currency selector options based on native currency
                 this.updateCurrencySelector();
                 
-            this.updateUI();
+                this.updateUI();
                 this.initializeTimeSlider();
-            this.createChart();
+                this.createChart();
+                this.hideError(); // Clear any previous errors on successful load
             } catch (fallbackError) {
                 console.error('❌ Fallback also failed:', fallbackError);
-                this.showError(`Failed to load data for ${ticker}: ${error.message}`);
-            throw error;
+                console.error('Fallback error details:', fallbackError.stack);
+                this.showError(`Failed to load data for ${ticker}: ${fallbackError.message}`);
+                throw fallbackError;
             }
         }
     }
 
     updateUI() {
-        if (!this.currentData) return;
+        if (!this.currentData) {
+            console.error('❌ No currentData available for updateUI');
+            return;
+        }
 
         const { symbol, metrics, thresholds, lastUpdated } = this.currentData;
         
         console.log(`🔄 Updating UI with currency: ${this.currentCurrency}`);
+        console.log(`📊 Data summary:`, {
+            symbol: symbol?.ticker,
+            hasMetrics: !!metrics,
+            hasThresholds: !!thresholds,
+            thresholdsCount: thresholds?.length || 0,
+            priceDataCount: this.currentData.priceData?.length || 0
+        });
         
         // Update ETF info
         document.getElementById('etf-name').textContent = symbol.name;
@@ -288,7 +321,7 @@ class ETFDashboard {
         document.getElementById('etf-isin').textContent = symbol.isin;
         
         // Update 52-week metrics (use EUR if available)
-        if (metrics.high52week !== undefined) {
+        if (metrics && metrics.high52week !== undefined) {
             const highPrice = this.formatCurrency(metrics.high52week, this.currentCurrency);
             document.getElementById('high-52week').textContent = highPrice;
             document.getElementById('high-date').textContent = 
@@ -296,7 +329,7 @@ class ETFDashboard {
             console.log(`📊 52-week high: ${highPrice} (${this.currentCurrency})`);
         }
         
-        if (metrics.low52week !== undefined) {
+        if (metrics && metrics.low52week !== undefined) {
             const lowPrice = this.formatCurrency(metrics.low52week, this.currentCurrency);
             document.getElementById('low-52week').textContent = lowPrice;
             document.getElementById('low-date').textContent = 
@@ -305,67 +338,223 @@ class ETFDashboard {
         }
         
         // Update thresholds
-        this.updateThresholds(thresholds);
+        if (thresholds && Array.isArray(thresholds)) {
+            console.log(`📋 Updating thresholds table with ${thresholds.length} entries`);
+            this.updateThresholds(thresholds);
+        } else {
+            console.warn('⚠️ No thresholds data available or thresholds is not an array');
+            this.updateThresholds([]);
+        }
         
         // Update profit targets
-        this.updateProfitTargets(thresholds);
+        if (thresholds && Array.isArray(thresholds)) {
+            this.updateProfitTargets(thresholds);
+        } else {
+            this.updateProfitTargets([]);
+        }
         
         // Note: last-updated element removed from HTML
     }
 
     updateThresholds(thresholds) {
-        const grid = document.getElementById('thresholds-grid');
-        grid.innerHTML = '';
-        
-        if (!thresholds || thresholds.length === 0) {
-            grid.innerHTML = '<p class="no-data">No threshold data available</p>';
-            return;
-        }
-        
-        // Get current price for comparison
-        const currentPrice = this.getCurrentPrice(this.currentCurrency);
-        
-        thresholds.forEach(threshold => {
-            const card = document.createElement('div');
-            card.className = 'threshold-card';
-            
-            // Convert threshold price to current currency
-            const thresholdPrice = this.currentCurrency === 'EUR' ? 
-                this.convertToEUR(threshold.thresholdPrice) : 
-                threshold.thresholdPrice;
-            
-            // Check if threshold has been reached
-            if (currentPrice && thresholdPrice && currentPrice <= thresholdPrice) {
-                card.classList.add('reached');
+        try {
+            const tbody = document.getElementById('thresholds-table-body');
+            if (!tbody) {
+                console.error('❌ thresholds-table-body element not found');
+                return;
             }
             
-            const symbol = this.getCurrencySymbol(this.currentCurrency);
-            card.innerHTML = `
-                <div class="threshold-percentage">${threshold.percentage}% Drop</div>
-                <div class="threshold-price">
-                    ${thresholdPrice ? `${symbol}${thresholdPrice.toFixed(2)}` : 'N/A'}
-                </div>
-            `;
+            tbody.innerHTML = '';
             
-            grid.appendChild(card);
-        });
+            if (!thresholds || !Array.isArray(thresholds) || thresholds.length === 0) {
+                console.warn('⚠️ No threshold data available or thresholds is not an array');
+                tbody.innerHTML = '<tr><td colspan="3" class="no-data">No threshold data available</td></tr>';
+                return;
+            }
+            
+            console.log(`📊 Updating thresholds table with ${thresholds.length} entries`);
+            
+            // Get price data for historical analysis
+            const priceData = this.currentData?.priceData || [];
+            const symbol = this.getCurrencySymbol(this.currentCurrency);
+            
+            // Get the price field based on currency
+            const priceField = this.currentCurrency === 'EUR' && priceData.length > 0 && priceData[0].hasOwnProperty('close_eur') 
+                ? 'close_eur' 
+                : 'close';
+            
+            // Find minimum price and when it occurred (for historical analysis)
+            let minPrice = null;
+            let minPriceDate = null;
+            if (priceData.length > 0) {
+                const prices = priceData.map(d => d[priceField]).filter(p => p !== null && p !== undefined);
+                if (prices.length > 0) {
+                    minPrice = Math.min(...prices);
+                    // Find the date when minimum price occurred
+                    const minPriceData = priceData.find(d => d[priceField] === minPrice);
+                    if (minPriceData) {
+                        minPriceDate = minPriceData.date;
+                    }
+                }
+            }
+            
+            // Get current price for comparison
+            const currentPrice = this.getCurrentPrice(this.currentCurrency);
+            
+            // Sort thresholds by percentage (ascending)
+            const sortedThresholds = [...thresholds].sort((a, b) => {
+                const aPct = a.percentage || 0;
+                const bPct = b.percentage || 0;
+                return aPct - bPct;
+            });
+            
+            // First, determine which thresholds have been reached and when
+            // We need to check in order from highest drop % to lowest drop % (cascading logic)
+            const thresholdReachedMap = new Map(); // Map to store reached status and date for each threshold
+            
+            // Sort by percentage descending (highest drop first) to implement cascading logic
+            const sortedByDropDesc = [...sortedThresholds].sort((a, b) => {
+                const aPct = a.percentage || 0;
+                const bPct = b.percentage || 0;
+                return bPct - aPct; // Descending order
+            });
+            
+            sortedByDropDesc.forEach(threshold => {
+                if (!threshold || threshold.percentage === undefined || threshold.thresholdPrice === undefined) {
+                    return;
+                }
+                
+                // Convert threshold price to current currency
+                let thresholdPrice;
+                try {
+                    thresholdPrice = this.currentCurrency === 'EUR' ? 
+                        this.convertToEUR(threshold.thresholdPrice) : 
+                        threshold.thresholdPrice;
+                } catch (e) {
+                    thresholdPrice = threshold.thresholdPrice;
+                }
+                
+                // Check if threshold has been reached using historical minimum price
+                let isReached = minPrice && thresholdPrice && minPrice <= thresholdPrice;
+                
+                // Find the date when this threshold was first reached (if it was reached directly)
+                let reachedDate = null;
+                if (isReached && priceData.length > 0) {
+                    // Find the first date when price dropped to or below this threshold
+                    for (let i = 0; i < priceData.length; i++) {
+                        const price = priceData[i][priceField];
+                        if (price !== null && price !== undefined && price <= thresholdPrice) {
+                            reachedDate = priceData[i].date;
+                            break; // Found first occurrence
+                        }
+                    }
+                }
+                
+                // Cascading logic: if a lower threshold (higher drop %) is reached,
+                // all higher thresholds (lower drop %) are also reached
+                // But we need to find the earliest date when this threshold was crossed
+                if (!isReached) {
+                    // Check if any lower threshold (higher drop %) has been reached
+                    for (const [pct, info] of thresholdReachedMap.entries()) {
+                        if (pct > threshold.percentage && info.isReached) {
+                            // A lower threshold (higher drop %) was reached, so this one is also reached
+                            isReached = true;
+                            // Find when this threshold was actually crossed (before the lower threshold)
+                            if (priceData.length > 0 && !reachedDate) {
+                                for (let i = 0; i < priceData.length; i++) {
+                                    const price = priceData[i][priceField];
+                                    if (price !== null && price !== undefined && price <= thresholdPrice) {
+                                        reachedDate = priceData[i].date;
+                                        break;
+                                    }
+                                }
+                            }
+                            break;
+                        }
+                    }
+                }
+                
+                thresholdReachedMap.set(threshold.percentage, { isReached, reachedDate, thresholdPrice });
+            });
+            
+            // Now render the table rows
+            sortedThresholds.forEach(threshold => {
+                try {
+                    if (!threshold || threshold.percentage === undefined || threshold.thresholdPrice === undefined) {
+                        console.warn('⚠️ Invalid threshold data:', threshold);
+                        return;
+                    }
+                    
+                    const row = document.createElement('tr');
+                    
+                    // Get reached status from map
+                    const thresholdInfo = thresholdReachedMap.get(threshold.percentage);
+                    const isReached = thresholdInfo?.isReached || false;
+                    const reachedDate = thresholdInfo?.reachedDate || null;
+                    const thresholdPrice = thresholdInfo?.thresholdPrice;
+                    
+                    const symbol = this.getCurrencySymbol(this.currentCurrency);
+                    
+                    // Format the reached date
+                    let reachedDateText = '';
+                    if (reachedDate) {
+                        try {
+                            const date = new Date(reachedDate);
+                            if (!isNaN(date.getTime())) {
+                                reachedDateText = date.toLocaleDateString('en-US', {
+                                    year: 'numeric',
+                                    month: 'short',
+                                    day: 'numeric'
+                                });
+                            }
+                        } catch (e) {
+                            console.warn('⚠️ Error formatting date:', e);
+                        }
+                    }
+                    
+                    row.innerHTML = `
+                        <td class="percentage-cell">${threshold.percentage}% Drop</td>
+                        <td class="price-cell">${thresholdPrice ? `${symbol}${thresholdPrice.toFixed(2)}` : 'N/A'}</td>
+                        <td class="status-cell">
+                            <span class="status-badge ${isReached ? 'reached' : 'pending'}">
+                                ${isReached ? '✓ Reached' : 'Pending'}
+                            </span>
+                            ${reachedDateText ? `<div class="reached-date" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">${reachedDateText}</div>` : ''}
+                        </td>
+                    `;
+                    
+                    if (isReached) {
+                        row.classList.add('reached-row');
+                    }
+                    
+                    tbody.appendChild(row);
+                } catch (e) {
+                    console.error('❌ Error creating threshold row:', e, threshold);
+                }
+            });
+            
+            console.log(`✅ Thresholds table updated with ${sortedThresholds.length} rows`);
+        } catch (error) {
+            console.error('❌ Error in updateThresholds:', error);
+            console.error('Error stack:', error.stack);
+        }
     }
 
     updateProfitTargets(thresholds) {
-        const grid = document.getElementById('profit-targets-grid');
+        const tbody = document.getElementById('profit-targets-table-body');
         const filterSelect = document.getElementById('threshold-filter');
         const clearButton = document.getElementById('clear-filter');
         
-        if (!grid || !filterSelect || !clearButton) {
+        if (!tbody || !filterSelect || !clearButton) {
             console.error('Required elements not found for profit targets');
             return;
         }
         
-        // Clear the grid initially
-        grid.innerHTML = '';
+        // Clear the table initially
+        tbody.innerHTML = '';
         
         if (!thresholds || thresholds.length === 0) {
-            grid.innerHTML = '<p class="no-data">No entry point data available</p>';
+            tbody.innerHTML = '<tr><td colspan="4" class="no-data">No entry point data available</td></tr>';
             return;
         }
         
@@ -373,10 +562,10 @@ class ETFDashboard {
         this.populateThresholdFilter(thresholds);
         
         // Set up event listeners for filter
-        this.setupProfitTargetsFilter(thresholds, grid);
+        this.setupProfitTargetsFilter(thresholds, tbody);
         
-        // Initially show empty grid until user selects a threshold
-        grid.innerHTML = '';
+        // Initially show empty table until user selects a threshold
+        tbody.innerHTML = '';
     }
 
     populateThresholdFilter(thresholds) {
@@ -404,7 +593,7 @@ class ETFDashboard {
         });
     }
 
-    setupProfitTargetsFilter(thresholds, grid) {
+    setupProfitTargetsFilter(thresholds, tbody) {
         const filterSelect = document.getElementById('threshold-filter');
         const clearButton = document.getElementById('clear-filter');
         
@@ -423,10 +612,10 @@ class ETFDashboard {
         const changeHandler = (e) => {
             const selectedPercentage = parseInt(e.target.value);
             if (selectedPercentage) {
-                this.showProfitTargetsForThreshold(thresholds, selectedPercentage, grid);
+                this.showProfitTargetsForThreshold(thresholds, selectedPercentage, tbody);
                 clearButton.disabled = false;
             } else {
-                grid.innerHTML = '';
+                tbody.innerHTML = '';
                 clearButton.disabled = true;
             }
         };
@@ -434,7 +623,7 @@ class ETFDashboard {
         // Clear button event
         const clickHandler = () => {
             filterSelect.value = '';
-            grid.innerHTML = '';
+            tbody.innerHTML = '';
             clearButton.disabled = true;
         };
         
@@ -453,19 +642,19 @@ class ETFDashboard {
         
         // Ensure the filter is properly initialized
         filterSelect.value = '';
-        grid.innerHTML = '';
+        tbody.innerHTML = '';
     }
 
-    showProfitTargetsForThreshold(thresholds, selectedPercentage, grid) {
+    showProfitTargetsForThreshold(thresholds, selectedPercentage, tbody) {
         // Find the selected threshold
         const selectedThreshold = thresholds.find(t => t.percentage === selectedPercentage);
         if (!selectedThreshold || !selectedThreshold.thresholdPrice) {
-            grid.innerHTML = '<p class="no-data">Selected entry point not found</p>';
+            tbody.innerHTML = '<tr><td colspan="4" class="no-data">Selected entry point not found</td></tr>';
             return;
         }
         
-        // Clear the grid
-        grid.innerHTML = '';
+        // Clear the table
+        tbody.innerHTML = '';
         
         // Get current price for comparison
         const currentPrice = this.getCurrentPrice(this.currentCurrency);
@@ -478,35 +667,32 @@ class ETFDashboard {
             this.convertToEUR(selectedThreshold.thresholdPrice) : 
             selectedThreshold.thresholdPrice;
         
-        // Create profit target cards for the selected threshold
-            profitTargets.forEach(profitPercent => {
+        const symbol = this.getCurrencySymbol(this.currentCurrency);
+        
+        // Create profit target rows for the selected threshold
+        profitTargets.forEach(profitPercent => {
             const profitTargetPrice = entryPrice * (1 + profitPercent / 100);
-                
-                const card = document.createElement('div');
-                card.className = 'profit-target-card';
-                
-                // Check if profit target has been reached
-                if (currentPrice && currentPrice >= profitTargetPrice) {
-                    card.classList.add('reached');
-                }
-                
-            const symbol = this.getCurrencySymbol(this.currentCurrency);
             
-            // Create the card content
-                card.innerHTML = `
-                <div class="profit-target-header">
-                    <div class="profit-target-percentage">${profitPercent}% Profit</div>
-                    <div class="entry-point-info">from ${selectedThreshold.percentage}% Drop Entry</div>
-                </div>
-                    <div class="profit-target-price">
-                    ${symbol}${profitTargetPrice.toFixed(2)}
-                    </div>
-                <div class="entry-point-price">
-                    Entry: ${symbol}${entryPrice.toFixed(2)}
-                    </div>
-                `;
-                
-                grid.appendChild(card);
+            // Check if profit target has been reached
+            const isReached = currentPrice && currentPrice >= profitTargetPrice;
+            
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td class="percentage-cell">${profitPercent}% Profit</td>
+                <td class="price-cell">${symbol}${profitTargetPrice.toFixed(2)}</td>
+                <td class="entry-price-cell">${symbol}${entryPrice.toFixed(2)}</td>
+                <td class="status-cell">
+                    <span class="status-badge ${isReached ? 'reached' : 'pending'}">
+                        ${isReached ? '✓ Reached' : 'Pending'}
+                    </span>
+                </td>
+            `;
+            
+            if (isReached) {
+                row.classList.add('reached-row');
+            }
+            
+            tbody.appendChild(row);
         });
     }
 
@@ -528,6 +714,13 @@ class ETFDashboard {
 
     createChart() {
         console.log('🎨 Starting chart creation...');
+        
+        // Check if Chart.js is available
+        if (typeof Chart === 'undefined') {
+            console.error('❌ Chart.js library not loaded');
+            this.showError('Chart.js library failed to load. Please refresh the page.');
+            return;
+        }
         
         if (!this.currentData || !this.currentData.priceData) {
             console.error('❌ No current data or price data available for chart');
@@ -553,9 +746,18 @@ class ETFDashboard {
         // Filter data based on time range
         let filteredData = this.filterDataByTimeRange(this.currentData.priceData);
         
+        console.log(`📅 Filtered data: ${filteredData.length} points for time range ${this.currentTimeRange}`);
+        console.log(`📅 Data range: ${filteredData.length > 0 ? filteredData[0].date : 'N/A'} to ${filteredData.length > 0 ? filteredData[filteredData.length - 1].date : 'N/A'}`);
+        
         if (filteredData.length === 0) {
-            console.log('No data available for selected time range');
-            return;
+            console.warn('⚠️ No data available for selected time range, showing all data instead');
+            // Fallback: show all data if filtered result is empty
+            filteredData = this.currentData.priceData.slice(-100); // Show last 100 points as fallback
+            if (filteredData.length === 0) {
+                console.error('❌ No data available at all');
+                this.showError('No data available for chart');
+                return;
+            }
         }
 
         // Apply time slider filtering if active
@@ -646,7 +848,7 @@ class ETFDashboard {
 
         // Add threshold lines if enabled
         if (this.chartMetrics.showThresholds) {
-        const colors = ['#f59e0b', '#f97316', '#dc2626', '#b91c1c', '#7f1d1d'];
+        const colors = ['#fbbf24', '#f59e0b', '#f97316', '#dc2626', '#b91c1c', '#7f1d1d'];
         thresholds.forEach((threshold, index) => {
             if (threshold.thresholdPrice) {
                     let thresholdPrice = threshold.thresholdPrice;
@@ -671,9 +873,12 @@ class ETFDashboard {
         try {
             const chartCtx = ctx.getContext('2d');
             if (!chartCtx) {
-                console.error('Could not get 2D context from canvas');
+                console.error('❌ Could not get 2D context from canvas');
+                this.showError('Chart canvas error - cannot get 2D context');
                 return;
             }
+            
+            console.log(`📊 Preparing chart config with ${datasets.length} datasets, ${labels.length} labels`);
             
             const config = {
                 type: 'line',
@@ -693,9 +898,9 @@ class ETFDashboard {
                             enabled: true,
                             mode: 'index',
                             intersect: false,
-                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                            titleColor: '#ffffff',
-                            bodyColor: '#ffffff',
+                            backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                            titleColor: '#f1f5f9',
+                            bodyColor: '#cbd5e1',
                             borderColor: '#667eea',
                             borderWidth: 1,
                             cornerRadius: 6,
@@ -764,6 +969,7 @@ class ETFDashboard {
                             labels: {
                                 usePointStyle: true,
                                 padding: 20,
+                                color: '#f1f5f9',
                                 font: {
                                     size: 12
                                 }
@@ -778,6 +984,7 @@ class ETFDashboard {
                             },
                             ticks: {
                                 maxTicksLimit: 10,
+                                color: '#cbd5e1',
                                 font: {
                                     size: 11
                                 },
@@ -801,13 +1008,19 @@ class ETFDashboard {
                         y: {
                             beginAtZero: false,
                             grid: {
-                                color: '#e2e8f0'
+                                color: 'rgba(203, 213, 225, 0.2)'
                             },
                             ticks: {
-                                callback: function(value) {
-                                    const currency = this.currentCurrency || 'EUR';
-                                    const symbol = this.getCurrencySymbol(currency);
-                                    return symbol + value.toFixed(2);
+                                color: '#cbd5e1',
+                                callback: (value) => {
+                                    try {
+                                        const currency = this.currentCurrency || 'EUR';
+                                        const symbol = this.getCurrencySymbol(currency);
+                                        return symbol + value.toFixed(2);
+                                    } catch (e) {
+                                        console.warn('⚠️ Error in y-axis tick callback:', e);
+                                        return value.toFixed(2);
+                                    }
                                 },
                                 font: {
                                     size: 11
@@ -828,14 +1041,20 @@ class ETFDashboard {
                 }
             };
             
-            // Store current currency reference for tooltip callbacks
-            config.options.plugins.tooltip.callbacks.label = config.options.plugins.tooltip.callbacks.label.bind(this);
-            config.options.scales.y.ticks.callback = config.options.scales.y.ticks.callback.bind(this);
+            // Store current currency reference for tooltip callbacks (if label callback exists)
+            if (config.options.plugins.tooltip.callbacks.label) {
+                config.options.plugins.tooltip.callbacks.label = config.options.plugins.tooltip.callbacks.label.bind(this);
+            }
+            // y-axis callback is already an arrow function, no binding needed
             
+            console.log('📊 Creating Chart.js instance...');
             this.chart = new Chart(chartCtx, config);
-            console.log('Chart created successfully');
+            console.log('✅ Chart created successfully');
+            this.hideError(); // Hide any previous errors
         } catch (error) {
-            console.error('Error creating chart:', error);
+            console.error('❌ Error creating chart:', error);
+            console.error('Error details:', error.message, error.stack);
+            this.showError(`Chart creation failed: ${error.message || 'Unknown error'}`);
         }
     }
 
@@ -847,31 +1066,60 @@ class ETFDashboard {
         
         switch (this.currentTimeRange) {
             case '1m':
-                cutoffDate.setMonth(now.getMonth() - 1);
+                // Last 30 days
+                cutoffDate.setTime(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+                cutoffDate.setHours(0, 0, 0, 0);
                 break;
             case '3m':
-                cutoffDate.setMonth(now.getMonth() - 3);
+                // Last 90 days
+                cutoffDate.setTime(now.getTime() - (90 * 24 * 60 * 60 * 1000));
+                cutoffDate.setHours(0, 0, 0, 0);
                 break;
             case '1y':
                 cutoffDate.setFullYear(now.getFullYear() - 1);
+                cutoffDate.setMonth(0);
+                cutoffDate.setDate(1);
+                cutoffDate.setHours(0, 0, 0, 0);
                 break;
             case '2y':
                 cutoffDate.setFullYear(now.getFullYear() - 2);
+                cutoffDate.setMonth(0);
+                cutoffDate.setDate(1);
+                cutoffDate.setHours(0, 0, 0, 0);
                 break;
             case '3y':
                 cutoffDate.setFullYear(now.getFullYear() - 3);
+                cutoffDate.setMonth(0);
+                cutoffDate.setDate(1);
+                cutoffDate.setHours(0, 0, 0, 0);
                 break;
             case 'all':
                 // Return all data
                 return priceData;
             default:
                 cutoffDate.setMonth(now.getMonth() - 1);
+                cutoffDate.setDate(1);
+                cutoffDate.setHours(0, 0, 0, 0);
         }
         
-        return priceData.filter(item => {
-            const itemDate = new Date(item.date);
+        const filtered = priceData.filter(item => {
+            // Parse date string (format: "YYYY-MM-DD")
+            const dateParts = item.date.split('-');
+            if (dateParts.length !== 3) return false;
+            
+            const itemDate = new Date(
+                parseInt(dateParts[0]), 
+                parseInt(dateParts[1]) - 1, 
+                parseInt(dateParts[2])
+            );
+            itemDate.setHours(0, 0, 0, 0);
+            
             return itemDate >= cutoffDate;
         });
+        
+        console.log(`📅 Date filter: ${this.currentTimeRange}, cutoff: ${cutoffDate.toISOString().split('T')[0]}, filtered: ${filtered.length} of ${priceData.length} points`);
+        
+        return filtered;
     }
 
     getTimeRangeDisplayName() {
@@ -894,8 +1142,10 @@ class ETFDashboard {
         document.getElementById('high-date').textContent = '-';
         document.getElementById('low-52week').textContent = '-';
         document.getElementById('low-date').textContent = '-';
-        document.getElementById('thresholds-grid').innerHTML = '';
-        document.getElementById('profit-targets-grid').innerHTML = '';
+        const thresholdsTbody = document.getElementById('thresholds-table-body');
+        const profitTargetsTbody = document.getElementById('profit-targets-table-body');
+        if (thresholdsTbody) thresholdsTbody.innerHTML = '';
+        if (profitTargetsTbody) profitTargetsTbody.innerHTML = '';
         
         // Reset the profit targets filter
         const filterSelect = document.getElementById('threshold-filter');
@@ -943,9 +1193,28 @@ class ETFDashboard {
         document.getElementById('loading').style.display = 'none';
     }
 
+    hideError() {
+        const errorElement = document.getElementById('error-message');
+        if (errorElement) {
+            errorElement.style.display = 'none';
+            console.log('✅ Error message hidden');
+        } else {
+            console.warn('⚠️ Error message element not found');
+        }
+    }
+
     showError(message) {
-        document.getElementById('error-message').style.display = 'block';
-        document.getElementById('error-message').querySelector('p').textContent = message;
+        const errorElement = document.getElementById('error-message');
+        if (errorElement) {
+            errorElement.style.display = 'block';
+            const errorText = errorElement.querySelector('p');
+            if (errorText) {
+                errorText.textContent = message;
+            }
+            console.error(`❌ Showing error: ${message}`);
+        } else {
+            console.error(`❌ Error message element not found. Message: ${message}`);
+        }
         this.hideLoading();
     }
 
@@ -1087,6 +1356,13 @@ class ETFDashboard {
 }
 
 // Initialize dashboard when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        console.log('📄 DOM loaded, initializing dashboard...');
+        new ETFDashboard();
+    });
+} else {
+    // DOM is already loaded
+    console.log('📄 DOM already loaded, initializing dashboard...');
     new ETFDashboard();
-});
+}

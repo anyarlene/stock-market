@@ -62,6 +62,7 @@ CREATE TABLE IF NOT EXISTS decrease_thresholds (
     symbol_id INTEGER NOT NULL,
     calculation_date DATE NOT NULL,
     high_52week_price DECIMAL(10,2),
+    decrease_5_price DECIMAL(10,2),
     decrease_10_price DECIMAL(10,2),
     decrease_15_price DECIMAL(10,2),
     decrease_20_price DECIMAL(10,2),

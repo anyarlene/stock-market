@@ -235,8 +235,14 @@ class DatabaseManager:
                 VALUES (?, ?, ?, ?, ?, ?)
             """, (symbol_id, calculation_date, high_52week, low_52week, high_date, low_date))
             
+            # Check if decrease_5_price column exists
+            self.cursor.execute("PRAGMA table_info(decrease_thresholds)")
+            columns = [col[1] for col in self.cursor.fetchall()]
+            has_5_percent = 'decrease_5_price' in columns
+            
             # Calculate decrease thresholds
             decreases = {
+                5: high_52week * 0.95,
                 10: high_52week * 0.9,
                 15: high_52week * 0.85,
                 20: high_52week * 0.8,
@@ -244,18 +250,32 @@ class DatabaseManager:
                 30: high_52week * 0.7
             }
             
-            # Store thresholds
-            self.cursor.execute("""
-                INSERT OR REPLACE INTO decrease_thresholds
-                (symbol_id, calculation_date, high_52week_price, 
-                decrease_10_price, decrease_15_price, decrease_20_price,
-                decrease_25_price, decrease_30_price)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                symbol_id, calculation_date, high_52week,
-                decreases[10], decreases[15], decreases[20],
-                decreases[25], decreases[30]
-            ))
+            # Store thresholds - use appropriate query based on schema
+            if has_5_percent:
+                self.cursor.execute("""
+                    INSERT OR REPLACE INTO decrease_thresholds
+                    (symbol_id, calculation_date, high_52week_price, 
+                    decrease_5_price, decrease_10_price, decrease_15_price, decrease_20_price,
+                    decrease_25_price, decrease_30_price)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    symbol_id, calculation_date, high_52week,
+                    decreases[5], decreases[10], decreases[15], decreases[20],
+                    decreases[25], decreases[30]
+                ))
+            else:
+                # Old schema without 5%
+                self.cursor.execute("""
+                    INSERT OR REPLACE INTO decrease_thresholds
+                    (symbol_id, calculation_date, high_52week_price, 
+                    decrease_10_price, decrease_15_price, decrease_20_price,
+                    decrease_25_price, decrease_30_price)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    symbol_id, calculation_date, high_52week,
+                    decreases[10], decreases[15], decreases[20],
+                    decreases[25], decreases[30]
+                ))
             
             self.conn.commit()
             logger.info(f"Stored metrics and thresholds for symbol {symbol_id}")
