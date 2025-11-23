@@ -21,8 +21,8 @@ concurrency:
 
 jobs:
   deploy:
-    # Only run if triggered by push or if production automation succeeded
-    if: github.event_name == 'push' || github.event.workflow_run.conclusion == 'success'
+    # Always run on push, or if production automation completed successfully
+    if: github.event_name == 'push' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
