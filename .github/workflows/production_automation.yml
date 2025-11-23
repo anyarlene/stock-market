@@ -57,8 +57,12 @@ jobs:
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
         git pull origin main --rebase || echo "No pull needed"
-        git add analytics/database/etf_database.db || echo "Database file not found, skipping"
-        git add analytics/logs/ || echo "Logs directory not found, skipping"
+        # Only commit website data files (database is ignored)
         git add website/data/ || echo "Website data directory not found, skipping"
-        git commit -m "Daily market data update $(date +'%Y-%m-%d %H:%M:%S')" || echo "No changes to commit"
-        git push origin main || echo "Push failed"
+        # Check if there are changes to commit
+        if git diff --staged --quiet; then
+          echo "No changes to commit"
+        else
+          git commit -m "Daily market data update - $(date +'%Y-%m-%d %H:%M:%S UTC')" || echo "Commit failed"
+          git push origin main || echo "Push failed"
+        fi
