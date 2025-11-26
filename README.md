@@ -9,6 +9,7 @@ ETF analytics platform with automated market data updates, currency conversion, 
 - Interactive charts with time range filtering
 - 52-week high/low metrics and entry point analysis
 - Automated daily updates via GitHub Actions
+- **ETF Insights Explorer** - Market sentiment, sector performance, and ETF holdings analysis
 
 ## Supported ETFs
 
@@ -49,9 +50,10 @@ python analytics/enhanced_workflow.py --step currency      # Currency conversion
 python analytics/enhanced_workflow.py --step export      # Export website data
 ```
 
-### View Dashboard
+### View Dashboards
 
-Open `website/index.html` in your browser.
+- **ETF Analytics Dashboard**: Open `website/index.html` in your browser
+- **ETF Insights Explorer**: Open `website/market-insights.html` for market sentiment, sector performance, and ETF holdings analysis
 
 ### Investment Strategy Planner
 
@@ -60,6 +62,58 @@ Access the interactive investment strategy planner at `website/investment-strate
 - View ETF purchase plans with real-time prices
 - Analyze historical growth and projections
 - Assess risk scenarios and tax implications
+
+## ETF Insights Explorer
+
+The **ETF Insights Explorer** dashboard provides comprehensive market analysis with three key visualizations:
+
+### Features
+
+1. **Fear & Greed Index**
+   - Real-time market sentiment indicator (0-100 scale)
+   - Historical trend visualization
+   - Classification: Extreme Fear, Fear, Neutral, Greed, Extreme Greed
+   - Data source: CNN Fear & Greed Index
+
+2. **S&P 500 Sector Performance**
+   - Interactive sector heatmap showing 1-month performance
+   - Sector-by-sector breakdown with change percentages
+   - Sortable sector cards
+   - Data source: Yahoo Finance via SPDR sector ETFs
+
+3. **ETF Holdings Distribution**
+   - Interactive pie charts showing top holdings for major ETFs
+   - Detailed holdings table with percentages
+   - Supports: VOO, QQQ, VTI, VUAA.L, CNDX.L
+   - Data source: Yahoo Finance
+
+### Generating Market Insights Data
+
+To generate the data files for the ETF Insights Explorer:
+
+```bash
+# Export market insights data (Fear & Greed Index, S&P 500 sectors, ETF holdings)
+python -m analytics.etl.market_insights_fetcher
+```
+
+This creates the following files in `website/data/`:
+- `fear_greed_index.json` - Current and historical Fear & Greed Index data
+- `sp500_sectors.json` - S&P 500 sector performance data
+- `etf_holdings.json` - Holdings data for supported ETFs
+
+### Testing the Dashboard Locally
+
+**Quick Start:**
+1. Install the required package: `pip install fear-greed-index`
+2. Generate data: `python -m analytics.etl.market_insights_fetcher`
+3. Start a local server: `cd website && python -m http.server 8000`
+4. Open in browser: `http://localhost:8000/market-insights.html`
+
+For detailed testing instructions, see `analytics/docs/market_insights_setup.md`
+
+![ETF Insights Explorer Dashboard](website/screenshots/market-insights-dashboard.png)
+
+*Note: Screenshot placeholder - add your dashboard screenshot here*
 
 ## Automation
 

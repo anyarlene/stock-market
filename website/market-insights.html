@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ETF Insights Explorer - Market Insights Dashboard</title>
+    <link rel="stylesheet" href="css/style.css?v=2024.11.26">
+    <link rel="stylesheet" href="css/market-insights.css?v=2024.11.26">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container horizontal-dashboard">
+        <header>
+            <h1>ETF Insights Explorer</h1>
+            <p class="subtitle">Market sentiment, sector performance, and ETF holdings analysis</p>
+            <nav class="page-nav">
+                <a href="index.html">← ETF Analytics Dashboard</a>
+                <a href="investment-strategy.html">Investment Strategy Planner →</a>
+            </nav>
+        </header>
+
+        <main class="dashboard-grid-single">
+            <!-- Fear & Greed Index -->
+            <section class="dashboard-panel" id="fear-greed-section">
+                <h2>Fear & Greed Index</h2>
+                <p class="section-subtitle">What emotion is driving the market now?</p>
+                <p class="data-source-note">Data source: Alternative.me API (may differ slightly from CNN)</p>
+                <div class="fear-greed-gauge-container">
+                    <canvas id="fear-greed-gauge-chart"></canvas>
+                    <div class="gauge-value-display" id="fear-greed-value">-</div>
+                    <div class="gauge-label-display" id="fear-greed-label">Loading...</div>
+                </div>
+                <div class="fear-greed-historical">
+                    <h3>Previous Readings</h3>
+                    <div class="historical-readings" id="historical-readings">
+                        <!-- Historical data will be populated by JavaScript -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Loading Indicator -->
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Loading market insights...</p>
+            </div>
+
+            <!-- Error Message -->
+            <div class="error-message" id="error-message" style="display: none;">
+                <p>Error loading data. Please try again later.</p>
+            </div>
+        </main>
+
+        <footer>
+            <p>This is an independent open data visualization project. Data is sourced from publicly available information.</p>
+        </footer>
+    </div>
+
+    <script src="js/market-insights.js?v=2024.11.26.21"></script>
+</body>
+</html>

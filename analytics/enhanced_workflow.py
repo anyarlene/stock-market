@@ -38,6 +38,7 @@ from database.load_symbols import load_symbols
 from etl.enhanced_market_data_fetcher import EnhancedMarketDataFetcher
 from etl.currency_converter_etl import main as currency_converter_main
 from etl.data_exporter import main as data_exporter_main
+from etl.market_insights_fetcher import export_market_insights_data
 
 class EnhancedWorkflowOrchestrator:
     """Enhanced workflow orchestrator with comprehensive error handling."""
@@ -151,6 +152,18 @@ class EnhancedWorkflowOrchestrator:
             logger.error(f"❌ Data export failed: {e}")
             raise
     
+    def run_market_insights_export(self) -> bool:
+        """Run market insights data export for ETF Insights Explorer."""
+        try:
+            logger.info("📊 Running market insights export...")
+            export_market_insights_data()
+            return True
+        except Exception as e:
+            logger.error(f"❌ Market insights export failed: {e}")
+            # Don't fail the entire workflow if market insights fail
+            logger.warning("⚠️  Continuing workflow despite market insights export failure")
+            return True
+    
     def save_workflow_results(self) -> None:
         """Save workflow results to file."""
         try:
@@ -221,6 +234,9 @@ class EnhancedWorkflowOrchestrator:
             if not self.run_step("Data Export", self.run_data_export):
                 return False
             
+            # Step 5: Market insights export (non-blocking)
+            self.run_step("Market Insights Export", self.run_market_insights_export)
+            
             # Save results and print summary
             self.save_workflow_results()
             self.print_summary()
@@ -257,7 +273,7 @@ class EnhancedWorkflowOrchestrator:
 def main():
     """Main execution function with command line arguments."""
     parser = argparse.ArgumentParser(description='Enhanced Workflow Orchestrator')
-    parser.add_argument('--step', choices=['full', 'incremental', 'fetch', 'currency', 'export'],
+    parser.add_argument('--step', choices=['full', 'incremental', 'fetch', 'currency', 'export', 'insights'],
                        default='full', help='Which step(s) to run')
     parser.add_argument('--verbose', '-v', action='store_true', 
                        help='Enable verbose logging')
@@ -280,6 +296,8 @@ def main():
             success = orchestrator.run_step("Currency Conversion", orchestrator.run_currency_conversion)
         elif args.step == 'export':
             success = orchestrator.run_step("Data Export", orchestrator.run_data_export)
+        elif args.step == 'insights':
+            success = orchestrator.run_step("Market Insights Export", orchestrator.run_market_insights_export)
         else:
             logger.error(f"Unknown step: {args.step}")
             sys.exit(1)

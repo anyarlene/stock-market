@@ -1,0 +1,322 @@
+/* Market Insights Dashboard Styles - Horizontal Layout */
+
+.horizontal-dashboard.container {
+    max-width: 1800px !important;
+}
+
+.dashboard-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 1.5rem;
+    margin-top: 2rem;
+}
+
+.dashboard-grid-single {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 1.5rem;
+    margin-top: 2rem;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.dashboard-panel {
+    background: var(--bg-secondary);
+    border-radius: 10px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px var(--shadow);
+    border: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    min-height: 600px;
+}
+
+.dashboard-grid-single .dashboard-panel {
+    min-height: 700px;
+}
+
+.dashboard-panel h2 {
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+    font-size: 1.4rem;
+    border-bottom: 2px solid var(--accent-primary);
+    padding-bottom: 0.5rem;
+}
+
+/* Fear & Greed Index Styles - Gauge Chart */
+.section-subtitle {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+    font-style: italic;
+}
+
+.data-source-note {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-bottom: 1rem;
+    opacity: 0.7;
+    font-style: italic;
+}
+
+.fear-greed-gauge-container {
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 280px;
+    margin-bottom: 1rem;
+    padding: 1rem 0;
+}
+
+.fear-greed-gauge-container canvas {
+    max-height: 240px;
+    max-width: 100%;
+    background: transparent;
+    padding: 10px;
+}
+
+.gauge-value-display {
+    font-size: 3.5rem;
+    font-weight: bold;
+    color: var(--text-primary);
+    margin-top: 0.75rem;
+    margin-bottom: 0.25rem;
+    line-height: 1;
+}
+
+.gauge-label-display {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 2px;
+    margin-top: 0.25rem;
+}
+
+.fear-greed-historical {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.fear-greed-historical h3 {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.75rem;
+    border: none;
+    padding: 0;
+}
+
+.historical-readings {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.historical-reading-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem;
+    background: var(--bg-tertiary);
+    border-radius: 5px;
+    font-size: 0.85rem;
+}
+
+.historical-reading-label {
+    color: var(--text-secondary);
+}
+
+.historical-reading-value {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.historical-reading-sentiment {
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.historical-reading-sentiment.extreme-fear {
+    background: #ef4444;
+    color: white;
+}
+
+.historical-reading-sentiment.fear {
+    background: #f59e0b;
+    color: white;
+}
+
+.historical-reading-sentiment.neutral {
+    background: #eab308;
+    color: #0f172a;
+}
+
+.historical-reading-sentiment.greed {
+    background: #84cc16;
+    color: #0f172a;
+}
+
+.historical-reading-sentiment.extreme-greed {
+    background: #10b981;
+    color: white;
+}
+
+.historical-reading-number {
+    font-weight: bold;
+    color: var(--text-primary);
+    min-width: 30px;
+    text-align: right;
+}
+
+/* S&P 500 Sector Performance Styles */
+.sector-charts-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    flex: 1;
+}
+
+.sector-chart-wrapper {
+    display: flex;
+    flex-direction: column;
+}
+
+.sector-chart-wrapper h3 {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+    text-align: center;
+}
+
+.sector-chart-wrapper canvas {
+    flex: 1;
+    max-height: 250px;
+}
+
+/* ETF Holdings Styles */
+.etf-selector-container {
+    margin-bottom: 1rem;
+}
+
+.etf-selector-container label {
+    display: block;
+    color: var(--text-secondary);
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.etf-selector-container select {
+    width: 100%;
+    padding: 0.5rem;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    font-size: 0.9rem;
+}
+
+.etf-holdings-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.etf-info {
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+}
+
+.etf-info h3 {
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+    font-size: 1rem;
+    border: none;
+    padding: 0;
+}
+
+.etf-info p {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    margin: 0;
+}
+
+.holdings-chart-container {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+}
+
+.info-box {
+    background: var(--bg-tertiary);
+    padding: 1rem;
+    border-radius: 8px;
+    margin-top: 1rem;
+}
+
+.info-box p {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    margin: 0;
+}
+
+/* Loading and Error Styles */
+.loading {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--bg-secondary);
+    padding: 2rem;
+    border-radius: 10px;
+    text-align: center;
+    z-index: 1000;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.error-message {
+    background: #ef4444;
+    color: white;
+    padding: 1rem;
+    border-radius: 8px;
+    margin: 1rem 0;
+    text-align: center;
+}
+
+/* Responsive Design */
+@media (max-width: 1400px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .sector-charts-container {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .dashboard-panel {
+        min-height: auto;
+    }
+    
+    .fear-greed-pie-container,
+    .holdings-chart-container {
+        min-height: 250px;
+    }
+}
