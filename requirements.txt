@@ -13,6 +13,9 @@ plotly>=5.18.0
 fear-greed-index>=1.2.0
 requests>=2.31.0
 
+# Database (PostgreSQL for Metabase dashboard)
+psycopg2-binary>=2.9.0
+
 # Development dependencies (optional)
 # Install with: pip install -r requirements.txt[dev]
 # pytest>=7.4.0

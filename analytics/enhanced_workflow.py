@@ -164,6 +164,68 @@ class EnhancedWorkflowOrchestrator:
             logger.warning("⚠️  Continuing workflow despite market insights export failure")
             return True
     
+    def run_postgres_sync(self) -> bool:
+        """Sync SQLite data to PostgreSQL for Metabase dashboard."""
+        try:
+            logger.info("🔄 Syncing data to PostgreSQL...")
+            # Import here to avoid dependency issues if PostgreSQL is not available
+            import sys
+            import importlib.util
+            from pathlib import Path
+            
+            # Load module from path (handles hyphenated directory name)
+            script_path = Path(__file__).parent.parent / "dashboard" / "data-export" / "sqlite_to_postgres.py"
+            if not script_path.exists():
+                logger.warning("⚠️  PostgreSQL sync script not found, skipping")
+                return True
+            
+            spec = importlib.util.spec_from_file_location("sqlite_to_postgres", script_path)
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            
+            sync = module.SQLiteToPostgresSync()
+            sync.sync_all_tables()
+            return True
+        except ImportError as e:
+            logger.warning(f"⚠️  PostgreSQL sync skipped (dependency not available): {e}")
+            return True  # Don't fail workflow if PostgreSQL sync is not available
+        except Exception as e:
+            logger.error(f"❌ PostgreSQL sync failed: {e}")
+            # Don't fail the entire workflow if PostgreSQL sync fails
+            logger.warning("⚠️  Continuing workflow despite PostgreSQL sync failure")
+            return True
+    
+    def run_market_insights_to_db(self) -> bool:
+        """Export market insights data to PostgreSQL."""
+        try:
+            logger.info("📊 Exporting market insights to PostgreSQL...")
+            # Import here to avoid dependency issues if PostgreSQL is not available
+            import sys
+            import importlib.util
+            from pathlib import Path
+            
+            # Load module from path (handles hyphenated directory name)
+            script_path = Path(__file__).parent.parent / "dashboard" / "data-export" / "market_insights_to_db.py"
+            if not script_path.exists():
+                logger.warning("⚠️  Market insights DB export script not found, skipping")
+                return True
+            
+            spec = importlib.util.spec_from_file_location("market_insights_to_db", script_path)
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            
+            exporter = module.MarketInsightsToDB()
+            exporter.export_all()
+            return True
+        except ImportError as e:
+            logger.warning(f"⚠️  Market insights DB export skipped (dependency not available): {e}")
+            return True  # Don't fail workflow if PostgreSQL export is not available
+        except Exception as e:
+            logger.error(f"❌ Market insights DB export failed: {e}")
+            # Don't fail the entire workflow if this fails
+            logger.warning("⚠️  Continuing workflow despite market insights DB export failure")
+            return True
+    
     def save_workflow_results(self) -> None:
         """Save workflow results to file."""
         try:
@@ -236,6 +298,12 @@ class EnhancedWorkflowOrchestrator:
             
             # Step 5: Market insights export (non-blocking)
             self.run_step("Market Insights Export", self.run_market_insights_export)
+            
+            # Step 6: PostgreSQL sync (non-blocking, for Metabase dashboard)
+            self.run_step("PostgreSQL Sync", self.run_postgres_sync)
+            
+            # Step 7: Market insights to PostgreSQL (non-blocking)
+            self.run_step("Market Insights to PostgreSQL", self.run_market_insights_to_db)
             
             # Save results and print summary
             self.save_workflow_results()
