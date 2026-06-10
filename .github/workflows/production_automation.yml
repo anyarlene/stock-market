@@ -7,62 +7,75 @@ on:
   workflow_dispatch:  # Allows manual trigger
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   update-market-data:
     runs-on: ubuntu-latest
-    
+
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      # Individual vars parsed from DATABASE_URL for dbt (see "Parse DB vars" step)
+      DB_HOST: ""
+      DB_PORT: ""
+      DB_USER: ""
+      DB_PASSWORD: ""
+      DB_NAME: ""
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
       with:
         ref: main
         fetch-depth: 0
-      
+
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.12'
-        
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        
+
+    - name: Parse DATABASE_URL into dbt env vars
+      run: |
+        python - <<'EOF'
+        import os, urllib.parse, pathlib
+        url = urllib.parse.urlparse(os.environ["DATABASE_URL"])
+        env_lines = [
+            f"DB_HOST={url.hostname}",
+            f"DB_PORT={url.port or 5432}",
+            f"DB_USER={url.username}",
+            f"DB_PASSWORD={url.password}",
+            f"DB_NAME={url.path.lstrip('/')}",
+        ]
+        with open(os.environ["GITHUB_ENV"], "a") as f:
+            f.write("\n".join(env_lines) + "\n")
+        print("DB vars written to GITHUB_ENV")
+        EOF
+
     - name: Initialize database (if needed)
       run: |
         cd analytics
-        PYTHONPATH=.. python database/init_db.py || echo "Database already exists"
+        PYTHONPATH=.. python database/init_db.py || echo "Tables already exist"
         PYTHONPATH=.. python database/load_symbols.py || echo "Symbols already loaded"
         cd ..
-        
+
     - name: Run market data update
       run: |
         PYTHONPATH=. python analytics/enhanced_workflow.py --step incremental
-        
-    - name: Show results
+
+    - name: Show database status
       run: |
         echo "=== Database Status ==="
         PYTHONPATH=. python analytics/database_diagnostic.py
-    
-    - name: Export website data
+
+    - name: Run dbt transformations
       run: |
-        PYTHONPATH=. python analytics/etl/data_exporter.py
-        
-    - name: Commit and push changes
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        git pull origin main --rebase || echo "No pull needed"
-        # Only commit website data files (database is ignored)
-        git add website/data/ || echo "Website data directory not found, skipping"
-        # Check if there are changes to commit
-        if git diff --staged --quiet; then
-          echo "No changes to commit"
-        else
-          git commit -m "Daily market data update - $(date +'%Y-%m-%d %H:%M:%S UTC')" || echo "Commit failed"
-          git push origin main || echo "Push failed"
-        fi
+        cd dbt
+        dbt deps
+        dbt run --profiles-dir .
+        dbt test --profiles-dir .
+        cd ..
