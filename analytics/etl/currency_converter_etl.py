@@ -27,11 +27,11 @@ def get_price_data_for_symbol(db: DatabaseManager, symbol_id: int) -> List[Dict[
     """Get all price data for a specific symbol."""
     query = """
     SELECT date, open, high, low, close, volume
-    FROM etf_data 
-    WHERE symbol_id = ? 
+    FROM etf_data
+    WHERE symbol_id = %s
     ORDER BY date ASC
     """
-    
+
     try:
         db.connect()
         db.cursor.execute(query, (symbol_id,))
@@ -57,20 +57,23 @@ def update_eur_prices(db: DatabaseManager, symbol_id: int, converted_data: List[
     """Update the database with EUR converted prices."""
     try:
         db.connect()
-        
+
         for data in converted_data:
-            db.cursor.execute("""
-                UPDATE etf_data 
-                SET open_eur = ?, high_eur = ?, low_eur = ?, close_eur = ?
-                WHERE symbol_id = ? AND date = ?
-            """, (
-                data.get('open_eur'),
-                data.get('high_eur'),
-                data.get('low_eur'),
-                data.get('close_eur'),
-                symbol_id,
-                data['date']
-            ))
+            db.cursor.execute(
+                """
+                UPDATE etf_data
+                SET open_eur = %s, high_eur = %s, low_eur = %s, close_eur = %s
+                WHERE symbol_id = %s AND date = %s
+                """,
+                (
+                    data.get("open_eur"),
+                    data.get("high_eur"),
+                    data.get("low_eur"),
+                    data.get("close_eur"),
+                    symbol_id,
+                    data["date"],
+                ),
+            )
         
         db.conn.commit()
         logger.info(f"Updated {len(converted_data)} records for symbol {symbol_id}")
@@ -95,18 +98,18 @@ def convert_existing_data_to_eur():
             SELECT s.id, s.name, s.ticker, s.currency, COUNT(e.id) as record_count
             FROM symbols s
             LEFT JOIN etf_data e ON s.id = e.symbol_id
-            WHERE s.is_active = 1
+            WHERE s.is_active = TRUE
             GROUP BY s.id, s.name, s.ticker, s.currency
             ORDER BY s.id
         """)
-        
+
         symbol_stats = db.cursor.fetchall()
-        
+
         print("📊 Database Analysis:")
         for stat in symbol_stats:
             symbol_id, name, ticker, currency, record_count = stat
             print(f"   Symbol {symbol_id}: {name} ({ticker}) - {currency} - {record_count} records")
-        
+
         # Check EUR conversion status
         db.cursor.execute("""
             SELECT s.id, s.name, s.ticker, s.currency,
@@ -114,7 +117,7 @@ def convert_existing_data_to_eur():
                    COUNT(e.open_eur) as with_eur_records
             FROM symbols s
             LEFT JOIN etf_data e ON s.id = e.symbol_id
-            WHERE s.is_active = 1
+            WHERE s.is_active = TRUE
             GROUP BY s.id, s.name, s.ticker, s.currency
             ORDER BY s.id
         """)
@@ -152,11 +155,15 @@ def convert_existing_data_to_eur():
             # For EUR symbols, set EUR fields to same values
             try:
                 db.connect()
-                db.cursor.execute("""
-                    UPDATE etf_data 
+                db.cursor.execute(
+                    """
+                    UPDATE etf_data
                     SET open_eur = open, high_eur = high, low_eur = low, close_eur = close
-                    WHERE symbol_id = ? AND (open_eur IS NULL OR high_eur IS NULL OR low_eur IS NULL OR close_eur IS NULL)
-                """, (symbol_id,))
+                    WHERE symbol_id = %s
+                      AND (open_eur IS NULL OR high_eur IS NULL OR low_eur IS NULL OR close_eur IS NULL)
+                    """,
+                    (symbol_id,),
+                )
                 
                 updated_count = db.cursor.rowcount
                 db.conn.commit()

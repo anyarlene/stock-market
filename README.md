@@ -1,132 +1,161 @@
-# ETF Analytics Dashboard
+# ETF Analytics Dashboard — v1
 
-ETF analytics platform with automated market data updates, currency conversion, and interactive visualizations.
+ETF analytics platform with automated market data updates, dbt transformations,
+and a Metabase dashboard built by AI.
 
-## Features
+## Stack
 
-- Historical market data from 2021-12-01 onwards
-- Automatic USD/GBP to EUR conversion with historical rates
-- Interactive charts with time range filtering
-- 52-week high/low metrics and entry point analysis
-- Automated daily updates via GitHub Actions
+| Layer | Tool |
+|---|---|
+| Data fetch | Python + `yfinance` |
+| Database | PostgreSQL 16 (Docker) |
+| Transformations | dbt Core |
+| Visualization | Metabase OSS (Docker) |
+| Orchestration | GitHub Actions |
 
 ## Supported ETFs
 
-### UCITS ETFs (European-listed)
-- Vanguard S&P 500 UCITS ETF (VUAA.L) - USD
-- iShares NASDAQ 100 UCITS ETF (CNDX.L) - GBP
+| Ticker | Name | Currency |
+|---|---|---|
+| VOO | Vanguard S&P 500 ETF | USD |
+| VTI | Vanguard Total Stock Market ETF | USD |
+| QQQ | Invesco QQQ Trust | USD |
+| VUAA.L | Vanguard S&P 500 UCITS ETF | USD |
+| CNDX.L | iShares NASDAQ 100 UCITS ETF | GBP |
 
-### US-listed ETFs
-- Vanguard S&P 500 ETF (VOO) - USD
-- Vanguard Total Stock Market ETF (VTI) - USD
-- Invesco QQQ Trust (QQQ) - USD
+---
 
-## Quick Start
-
-### Installation
+## Quick Start (Docker Desktop required)
 
 ```bash
+# 1. Clone and configure
 git clone <repository-url>
 cd stock-market
-python -m venv market-env
-source market-env/bin/activate  # Windows: market-env\Scripts\activate
+cp .env.example .env          # defaults work for local Docker
+
+# 2. Start PostgreSQL + Metabase
+docker compose up -d
+
+# 3. Install Python dependencies
 pip install -r requirements.txt
+
+# 4. Initialize DB, load symbols, fetch data
+cd analytics
+PYTHONPATH=.. python database/init_db.py
+PYTHONPATH=.. python database/load_symbols.py
+cd ..
+PYTHONPATH=. python analytics/enhanced_workflow.py --step full
+
+# 5. Run dbt transformations
+cd dbt
+dbt run --profiles-dir .
+cd ..
+
+# 6. Open Metabase at http://localhost:3000
 ```
 
-### Run Complete Workflow
+For Metabase setup, MCP connection, and AI-assisted dashboard build:
+→ See `analytics/docs/metabase_setup.md`
 
+---
+
+## dbt Models
+
+```
+dbt/models/
+├── staging/
+│   ├── stg_etf_data.sql          ← cleans raw price + symbol join
+│   └── stg_currency_rates.sql    ← cleans FX rate cache
+├── intermediate/
+│   └── int_etf_eur.sql           ← ensures all rows have EUR prices
+└── marts/
+    ├── mart_price_history.sql    ← daily OHLCV + EUR + derived metrics
+    ├── mart_52week_metrics.sql   ← latest 52-week high/low per ETF
+    └── mart_entry_thresholds.sql ← 5–30% entry levels (long format)
+```
+
+Run transformations:
 ```bash
-python analytics/enhanced_workflow.py --step full
+cd dbt && dbt run --profiles-dir . && dbt test --profiles-dir .
 ```
 
-This runs: database init → load symbols → fetch data → convert currencies → export data
-
-### Run Individual Steps
-
-```bash
-python analytics/enhanced_workflow.py --step incremental  # Daily updates
-python analytics/enhanced_workflow.py --step currency      # Currency conversion
-python analytics/enhanced_workflow.py --step export      # Export website data
-```
-
-### View Dashboard
-
-Open `website/index.html` in your browser.
-
-### Investment Strategy Planner
-
-Access the interactive investment strategy planner at `website/investment-strategy.html` to:
-- Plan lump-sum investments by region
-- View ETF purchase plans with real-time prices
-- Analyze historical growth and projections
-- Assess risk scenarios and tax implications
+---
 
 ## Automation
 
-### Production (GitHub Actions)
+### Production — zero daily work, access from anywhere
 
-- **Schedule**: Weekdays at 21:15 UTC
-- **Process**: Incremental update → diagnostics → website export → auto-commit
-- **Branch**: `main` only
-- **Monitoring**: GitHub Actions tab
+| Piece | Service | Cost |
+|---|---|---|
+| Database | [Supabase](https://supabase.com) free tier | Free |
+| Daily data update | GitHub Actions (already configured) | Free |
+| Dashboard | Oracle Cloud Always Free VM | Free |
 
-### Local Testing (Airflow - Optional)
+**After one-time setup:** open `http://<oracle-ip>:3000` from any browser.
+Data refreshes automatically every weekday. No local Docker. No manual runs.
 
-- **Purpose**: Test workflows locally before production
-- **Setup**: See `analytics/docs/airflow_setup.md`
-- **Note**: Runs locally with Docker, no cloud costs
+→ Full setup guide: `analytics/docs/metabase_setup.md` (Production Setup section)
+
+### GitHub Actions schedule
+
+- **When**: Weekdays at 21:15 UTC
+- **What**: ETL fetch → PostgreSQL insert → `dbt run` → `dbt test`
+- **Required secret**: `DATABASE_URL` (Supabase connection string) in repo Settings → Secrets
 
 ### Development Workflow
 
-1. Create feature branch: `git checkout -b feature/my-update`
-2. Make changes and test locally
-3. Push to feature branch (triggers test automation)
-4. Create pull request and merge to `main`
-5. Production automation runs automatically on `main`
+```bash
+git checkout -b cursor/<feature-name>-7a1c
+# make changes
+git push -u origin <branch>
+# open PR → merge to main
+```
+
+---
 
 ## Project Structure
 
 ```
 stock-market/
-├── analytics/                    # ETL pipeline
-│   ├── enhanced_workflow.py     # Main orchestrator
-│   ├── database/                # Database operations
-│   ├── etl/                      # Data processing
-│   └── docs/                     # Documentation
-├── .github/workflows/           # GitHub Actions
-│   ├── test_automation.yml      # CI testing
-│   ├── production_automation.yml # Production automation
-│   └── deploy-website.yml       # Website deployment
-├── airflow/                      # Local Airflow setup (optional)
-├── website/                      # Frontend dashboard
-└── requirements.txt              # Dependencies
+├── analytics/
+│   ├── enhanced_workflow.py        # ETL orchestrator
+│   ├── database/                   # DB manager + schema (PostgreSQL)
+│   ├── etl/                        # Fetchers + currency ETL
+│   ├── utils/                      # Currency converter
+│   └── docs/                       # Setup + Metabase guide
+├── dbt/
+│   ├── dbt_project.yml
+│   ├── profiles.yml
+│   └── models/
+│       ├── staging/
+│       ├── intermediate/
+│       └── marts/
+├── website/
+│   ├── index.html                  # Legacy chart view (kept)
+│   └── archived/                   # Investment Strategy Planner (archived)
+├── .github/workflows/
+├── docker-compose.yml
+├── .env.example
+└── requirements.txt
 ```
+
+---
 
 ## Documentation
 
-- `analytics/docs/setup.md` - Initial setup guide
-- `analytics/docs/how_to_run_scripts.md` - Script execution guide
-- `analytics/docs/automation_setup.md` - Automation configuration
-- `analytics/docs/airflow_setup.md` - Local Airflow setup
+| File | Topic |
+|---|---|
+| `analytics/docs/metabase_setup.md` | Full Metabase + MCP + AI dashboard guide |
+| `analytics/docs/stock-market-v1.md` | v1 plan and architecture overview |
+| `analytics/docs/setup.md` | Initial environment setup |
+| `analytics/docs/automation_setup.md` | GitHub Actions configuration |
 
-## Configuration
-
-- **Database**: `analytics/database/etf_database.db`
-- **Data Source**: Yahoo Finance via `yfinance`
-- **Historical Period**: 2021-12-01 to present
-
-## Testing
-
-```bash
-# Database diagnostics
-python analytics/database_diagnostic.py
-
-# Test workflow components
-python analytics/test_enhanced_workflow.py
-```
+---
 
 ## Adding New ETFs
 
 1. Edit `analytics/database/reference/symbols.csv`
 2. Run `python analytics/database/load_symbols.py`
 3. Run `python analytics/enhanced_workflow.py --step incremental`
+4. Run `cd dbt && dbt run --profiles-dir .`
+5. Refresh Metabase metadata sync (Admin > Databases > Sync)

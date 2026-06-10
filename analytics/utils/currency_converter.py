@@ -10,16 +10,30 @@ import yfinance as yf
 from datetime import datetime, date, timedelta
 from typing import Optional, Dict, Any, List
 import logging
-import sqlite3
 import os
+
+import psycopg2
 
 logger = logging.getLogger(__name__)
 
+
+def _build_database_url() -> str:
+    url = os.environ.get("DATABASE_URL")
+    if url:
+        return url
+    host = os.environ.get("DB_HOST", "localhost")
+    port = os.environ.get("DB_PORT", "5432")
+    user = os.environ.get("DB_USER", "etf_user")
+    password = os.environ.get("DB_PASSWORD", "etf_pass")
+    dbname = os.environ.get("DB_NAME", "etf_db")
+    return f"postgresql://{user}:{password}@{host}:{port}/{dbname}"
+
+
 class CurrencyConverter:
     """Handles currency conversions for ETF data with historical rate support."""
-    
-    def __init__(self, db_path: str = "database/etf_database.db"):
-        self.db_path = db_path
+
+    def __init__(self, db_path: str = None):
+        self.database_url = _build_database_url()
         self.exchange_rates = {}
         self.last_update = None
     
@@ -78,63 +92,49 @@ class CurrencyConverter:
             return {}
     
     def store_exchange_rates(self, from_currency: str, to_currency: str, rates: Dict[str, float]):
-        """
-        Store exchange rates in the database.
-        
-        Args:
-            from_currency: Source currency
-            to_currency: Target currency
-            rates: Dictionary mapping date strings to rates
-        """
+        """Store exchange rates in the database."""
+        conn = None
         try:
-            conn = sqlite3.connect(self.db_path)
+            conn = psycopg2.connect(self.database_url)
             cursor = conn.cursor()
-            
             for date_str, rate in rates.items():
-                cursor.execute("""
-                    INSERT OR REPLACE INTO currency_rates 
-                    (from_currency, to_currency, rate_date, exchange_rate)
-                    VALUES (?, ?, ?, ?)
-                """, (from_currency, to_currency, date_str, rate))
-            
+                cursor.execute(
+                    """
+                    INSERT INTO currency_rates (from_currency, to_currency, rate_date, exchange_rate)
+                    VALUES (%s, %s, %s, %s)
+                    ON CONFLICT (from_currency, to_currency, rate_date)
+                    DO UPDATE SET exchange_rate = EXCLUDED.exchange_rate
+                    """,
+                    (from_currency, to_currency, date_str, rate),
+                )
             conn.commit()
             logger.info(f"Stored {len(rates)} exchange rates for {from_currency}/{to_currency}")
-            
-        except sqlite3.Error as e:
+        except psycopg2.Error as e:
             logger.error(f"Error storing exchange rates: {e}")
         finally:
-            if conn:
+            if conn and not conn.closed:
                 conn.close()
     
     def get_cached_exchange_rate(self, from_currency: str, to_currency: str, target_date: date) -> Optional[float]:
-        """
-        Get exchange rate from database cache.
-        
-        Args:
-            from_currency: Source currency
-            to_currency: Target currency
-            target_date: Target date for rate
-            
-        Returns:
-            Exchange rate or None if not found
-        """
+        """Get exchange rate from database cache."""
+        conn = None
         try:
-            conn = sqlite3.connect(self.db_path)
+            conn = psycopg2.connect(self.database_url)
             cursor = conn.cursor()
-            
-            cursor.execute("""
-                SELECT exchange_rate FROM currency_rates 
-                WHERE from_currency = ? AND to_currency = ? AND rate_date = ?
-            """, (from_currency, to_currency, target_date.strftime('%Y-%m-%d')))
-            
+            cursor.execute(
+                """
+                SELECT exchange_rate FROM currency_rates
+                WHERE from_currency = %s AND to_currency = %s AND rate_date = %s
+                """,
+                (from_currency, to_currency, target_date.strftime("%Y-%m-%d")),
+            )
             row = cursor.fetchone()
             return float(row[0]) if row else None
-            
-        except sqlite3.Error as e:
+        except psycopg2.Error as e:
             logger.error(f"Error getting cached exchange rate: {e}")
             return None
         finally:
-            if conn:
+            if conn and not conn.closed:
                 conn.close()
     
     def get_exchange_rate(self, from_currency: str, to_currency: str = 'EUR', 

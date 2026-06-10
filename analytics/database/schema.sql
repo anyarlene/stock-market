@@ -1,19 +1,19 @@
 -- ETF/Stock symbols mapping table
 CREATE TABLE IF NOT EXISTS symbols (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id SERIAL PRIMARY KEY,
     isin TEXT NOT NULL UNIQUE,
     ticker TEXT NOT NULL,
-    name TEXT NOT NULL UNIQUE,  -- Added UNIQUE constraint
+    name TEXT NOT NULL UNIQUE,
     asset_type TEXT NOT NULL CHECK(asset_type IN ('ETF', 'STOCK')),
     exchange TEXT NOT NULL,
     currency TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    is_active BOOLEAN DEFAULT 1
+    is_active BOOLEAN DEFAULT TRUE
 );
 
 -- Currency exchange rates table for historical rates
 CREATE TABLE IF NOT EXISTS currency_rates (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id SERIAL PRIMARY KEY,
     from_currency TEXT NOT NULL,
     to_currency TEXT NOT NULL,
     rate_date DATE NOT NULL,
@@ -24,15 +24,14 @@ CREATE TABLE IF NOT EXISTS currency_rates (
 
 -- ETF data table to store historical price data
 CREATE TABLE IF NOT EXISTS etf_data (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id SERIAL PRIMARY KEY,
     symbol_id INTEGER NOT NULL,
     date DATE NOT NULL,
     open DECIMAL(10,2),
     high DECIMAL(10,2),
     low DECIMAL(10,2),
     close DECIMAL(10,2),
-    volume INTEGER,
-    -- EUR conversion fields
+    volume BIGINT,
     open_eur DECIMAL(10,2),
     high_eur DECIMAL(10,2),
     low_eur DECIMAL(10,2),
@@ -44,7 +43,7 @@ CREATE TABLE IF NOT EXISTS etf_data (
 
 -- 52-week metrics table
 CREATE TABLE IF NOT EXISTS fifty_two_week_metrics (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id SERIAL PRIMARY KEY,
     symbol_id INTEGER NOT NULL,
     calculation_date DATE NOT NULL,
     high_52week DECIMAL(10,2),
@@ -58,7 +57,7 @@ CREATE TABLE IF NOT EXISTS fifty_two_week_metrics (
 
 -- Decrease thresholds tracking table
 CREATE TABLE IF NOT EXISTS decrease_thresholds (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id SERIAL PRIMARY KEY,
     symbol_id INTEGER NOT NULL,
     calculation_date DATE NOT NULL,
     high_52week_price DECIMAL(10,2),
@@ -73,7 +72,7 @@ CREATE TABLE IF NOT EXISTS decrease_thresholds (
     UNIQUE(symbol_id, calculation_date)
 );
 
--- Create indices for better query performance
+-- Indices for query performance
 CREATE INDEX IF NOT EXISTS idx_etf_data_date ON etf_data(date);
 CREATE INDEX IF NOT EXISTS idx_etf_data_symbol ON etf_data(symbol_id);
 CREATE INDEX IF NOT EXISTS idx_currency_rates_date ON currency_rates(rate_date);

@@ -1,0 +1,42 @@
+version: 2
+
+models:
+  - name: mart_price_history
+    description: >
+      One row per ETF per trading day. Contains native-currency and EUR prices,
+      daily change metrics, and a 7-day rolling average. Primary table for
+      Metabase price history charts.
+    columns:
+      - name: ticker
+        tests: [not_null]
+      - name: date
+        tests: [not_null]
+      - name: close
+        tests: [not_null]
+      - name: close_eur
+        tests: [not_null]
+
+  - name: mart_52week_metrics
+    description: >
+      Latest 52-week high/low per ETF, joined with the most recent price.
+      One row per ETF. Used for KPI cards and summary metrics table.
+    columns:
+      - name: ticker
+        tests: [unique, not_null]
+      - name: high_52week
+        tests: [not_null]
+      - name: low_52week
+        tests: [not_null]
+
+  - name: mart_entry_thresholds
+    description: >
+      Entry point thresholds (5–30% below 52-week high) in long format.
+      One row per ETF per threshold level (6 rows per ETF = 30 total).
+      Used for the threshold bar chart and buying signal indicators.
+    columns:
+      - name: ticker
+        tests: [not_null]
+      - name: pct_below
+        tests: [not_null]
+      - name: threshold_price
+        tests: [not_null]

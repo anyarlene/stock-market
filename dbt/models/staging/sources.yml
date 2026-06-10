@@ -1,0 +1,50 @@
+version: 2
+
+sources:
+  - name: raw
+    description: Raw tables written by the Python ETL pipeline
+    schema: public
+    tables:
+      - name: etf_data
+        description: Raw OHLCV price data per ETF per day
+        columns:
+          - name: id
+            tests: [unique, not_null]
+          - name: symbol_id
+            tests: [not_null]
+          - name: date
+            tests: [not_null]
+          - name: close
+            tests: [not_null]
+
+      - name: symbols
+        description: ETF metadata (ticker, ISIN, currency)
+        columns:
+          - name: id
+            tests: [unique, not_null]
+          - name: ticker
+            tests: [unique, not_null]
+
+      - name: currency_rates
+        description: Cached historical EUR exchange rates
+        columns:
+          - name: from_currency
+            tests: [not_null]
+          - name: rate_date
+            tests: [not_null]
+
+      - name: fifty_two_week_metrics
+        description: Calculated 52-week high/low metrics
+        columns:
+          - name: symbol_id
+            tests: [not_null]
+          - name: calculation_date
+            tests: [not_null]
+
+      - name: decrease_thresholds
+        description: Entry point thresholds at 5–30% below 52-week high
+        columns:
+          - name: symbol_id
+            tests: [not_null]
+          - name: calculation_date
+            tests: [not_null]

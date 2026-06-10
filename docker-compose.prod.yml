@@ -1,0 +1,21 @@
+# Production compose — runs on the Oracle Cloud free VM.
+# PostgreSQL lives on Supabase (cloud). Only Metabase runs here.
+# Start with: docker compose -f docker-compose.prod.yml up -d
+
+services:
+  metabase:
+    image: metabase/metabase:latest
+    container_name: etf_metabase
+    restart: always
+    ports:
+      - "3000:3000"
+    volumes:
+      - metabase_data:/metabase-data
+    environment:
+      MB_DB_TYPE: h2
+      MB_DB_FILE: /metabase-data/metabase.db
+      MB_LOAD_SAMPLE_CONTENT: "false"
+      MB_INSTALL_ANALYTICS_DATABASE: "false"
+
+volumes:
+  metabase_data:

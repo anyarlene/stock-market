@@ -39,26 +39,26 @@ from database.db_manager import DatabaseManager
 
 class EnhancedMarketDataFetcher:
     """Enhanced market data fetcher with incremental updates and validation."""
-    
-    def __init__(self, db_path: str = "database/etf_database.db"):
+
+    def __init__(self, db_path: str = None):
         """Initialize the enhanced fetcher."""
-        self.db = DatabaseManager(db_path)
+        self.db = DatabaseManager()
         self.max_retries = 3
         self.retry_delay = 60  # seconds
-        
+
     def get_latest_data_date(self, symbol_id: int) -> Optional[date]:
         """Get the latest date for which we have data for a symbol."""
         try:
             self.db.connect()
-            self.db.cursor.execute("""
-                SELECT MAX(date) FROM etf_data WHERE symbol_id = ?
-            """, (symbol_id,))
-            
+            self.db.cursor.execute(
+                "SELECT MAX(date) FROM etf_data WHERE symbol_id = %s",
+                (symbol_id,),
+            )
             result = self.db.cursor.fetchone()
             if result and result[0]:
-                return datetime.strptime(result[0], '%Y-%m-%d').date()
+                # PostgreSQL returns a date object directly
+                return result[0] if isinstance(result[0], date) else datetime.strptime(str(result[0]), "%Y-%m-%d").date()
             return None
-            
         except Exception as e:
             logger.error(f"Error getting latest data date for symbol {symbol_id}: {e}")
             return None

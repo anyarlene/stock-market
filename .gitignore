@@ -65,6 +65,11 @@ website/data/*.json
 airflow/.env
 airflow/logs/
 
+# dbt artifacts
+dbt/target/
+dbt/logs/
+dbt/.user.yml
+
 # Virtual environments
 market-env/
 venv/
