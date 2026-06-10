@@ -83,11 +83,24 @@ cd dbt && dbt run --profiles-dir . && dbt test --profiles-dir .
 
 ## Automation
 
-### Production (GitHub Actions)
+### Production — zero daily work, access from anywhere
 
-- **Schedule**: Weekdays at 21:15 UTC
-- **Process**: Fetch → insert → `dbt run` → `dbt test`
-- **Required secret**: `DATABASE_URL` pointing to a hosted PostgreSQL (Supabase / Neon free tier)
+| Piece | Service | Cost |
+|---|---|---|
+| Database | [Supabase](https://supabase.com) free tier | Free |
+| Daily data update | GitHub Actions (already configured) | Free |
+| Dashboard | Oracle Cloud Always Free VM | Free |
+
+**After one-time setup:** open `http://<oracle-ip>:3000` from any browser.
+Data refreshes automatically every weekday. No local Docker. No manual runs.
+
+→ Full setup guide: `analytics/docs/metabase_setup.md` (Production Setup section)
+
+### GitHub Actions schedule
+
+- **When**: Weekdays at 21:15 UTC
+- **What**: ETL fetch → PostgreSQL insert → `dbt run` → `dbt test`
+- **Required secret**: `DATABASE_URL` (Supabase connection string) in repo Settings → Secrets
 
 ### Development Workflow
 

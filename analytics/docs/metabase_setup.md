@@ -158,27 +158,194 @@ Add a ticker filter parameter to the dashboard so I can isolate one ETF at a tim
 
 ---
 
-## 7. Persistent production database (optional)
-
-For the GitHub Actions workflow to update data daily, the PostgreSQL database must be accessible from the internet. Free hosted options:
-
-| Provider | Free tier | Notes |
-|---|---|---|
-| [Supabase](https://supabase.com) | 500 MB, always-on | Best option for this project |
-| [Neon](https://neon.tech) | 0.5 GB, serverless | Slightly slower cold starts |
-
-Steps:
-1. Create a free PostgreSQL instance on Supabase or Neon
-2. Run the schema init and symbol load once against that DB
-3. Add `DATABASE_URL` to **GitHub repository secrets** (Settings > Secrets > Actions)
-4. The daily workflow will then fetch, transform, and dbt-run against the hosted DB
-5. Point Metabase at the same hosted DB connection string
-
----
-
-## 8. Stop the stack
+## 7. Stop the local stack
 
 ```bash
 docker compose down          # stop containers, keep data
 docker compose down -v       # stop and delete all data (full reset)
 ```
+
+---
+
+---
+
+# Production Setup — Dashboard from anywhere, zero daily work
+
+> **Goal:** open a URL in any browser → see today's data. No local Docker. No manual runs.
+>
+> **Stack:** Supabase (database) + Oracle Cloud free VM (Metabase) + GitHub Actions (daily data update)
+
+---
+
+## Step 1 — Supabase (free PostgreSQL, always-on)
+
+1. Go to [supabase.com](https://supabase.com) → **Start for free** → create a project
+2. Choose a region close to you, set a strong DB password
+3. Go to **Project Settings → Database → Connection string → URI**
+4. Copy the connection string — it looks like:
+   ```
+   postgresql://postgres:[YOUR-PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres
+   ```
+5. Keep it safe — you will use it in steps 2 and 3
+
+### Initialize the database on Supabase (one time only)
+
+Run these commands locally with your Supabase `DATABASE_URL`:
+
+```bash
+export DATABASE_URL="postgresql://postgres:[password]@db.[ref].supabase.co:5432/postgres"
+
+cd analytics
+PYTHONPATH=.. python database/init_db.py
+PYTHONPATH=.. python database/load_symbols.py
+cd ..
+
+# Run a full data fetch to populate the database
+PYTHONPATH=. python analytics/enhanced_workflow.py --step full
+
+# Run dbt to create the mart tables
+cd dbt && dbt run --profiles-dir . && cd ..
+```
+
+After this, the data is in Supabase and refreshes automatically every weekday via GitHub Actions.
+
+---
+
+## Step 2 — GitHub Actions (daily automatic updates)
+
+1. Go to your GitHub repo → **Settings → Secrets and variables → Actions**
+2. Click **New repository secret**
+3. Name: `DATABASE_URL`
+4. Value: your Supabase connection string from Step 1
+5. Click **Add secret**
+
+That's it. GitHub Actions will now run the ETL + dbt every weekday at 10:15 PM Berlin time, writing fresh data to Supabase automatically.
+
+---
+
+## Step 3 — Oracle Cloud free VM (Metabase, always-on)
+
+### 3a. Create the VM
+
+1. Go to [cloud.oracle.com](https://cloud.oracle.com) → **Start for free** (no credit card billing for Always Free resources)
+2. After signup, go to **Compute → Instances → Create Instance**
+3. Change shape: click **Change Shape** → **Ampere** → select `VM.Standard.A1.Flex`
+   - Set **OCPUs: 2**, **Memory: 12 GB** (well within the Always Free quota)
+4. Choose **Ubuntu 22.04** as the image
+5. Download the SSH key when prompted (you will need it to connect)
+6. Click **Create**
+
+### 3b. Open the firewall for port 3000
+
+**In the Oracle Cloud console:**
+
+1. Go to your instance → **Subnet** → **Security List**
+2. Add an **Ingress Rule**:
+   - Source CIDR: `0.0.0.0/0`
+   - Destination port: `3000`
+   - Protocol: TCP
+
+**On the VM itself** (after SSH in):
+
+```bash
+sudo iptables -I INPUT -p tcp --dport 3000 -j ACCEPT
+sudo netfilter-persistent save
+```
+
+### 3c. Install Docker on the VM
+
+SSH into your VM:
+
+```bash
+ssh -i <your-key.pem> ubuntu@<your-oracle-ip>
+```
+
+Then install Docker:
+
+```bash
+sudo apt update && sudo apt install -y docker.io docker-compose-plugin
+sudo usermod -aG docker ubuntu
+# log out and back in for group change to take effect
+exit
+ssh -i <your-key.pem> ubuntu@<your-oracle-ip>
+```
+
+### 3d. Deploy Metabase
+
+```bash
+# Clone the repo
+git clone https://github.com/anyarlene/stock-market.git
+cd stock-market
+
+# Start Metabase (production compose — no local PostgreSQL)
+docker compose -f docker-compose.prod.yml up -d
+
+# Check it is running
+docker compose -f docker-compose.prod.yml ps
+```
+
+Metabase will be available at:
+```
+http://<your-oracle-ip>:3000
+```
+
+Metabase starts in about 2 minutes the first time (JVM warmup).
+
+---
+
+## Step 4 — Connect Metabase to Supabase (one time only)
+
+1. Open `http://<your-oracle-ip>:3000` in your browser
+2. Complete the setup wizard (create admin account)
+3. Choose **I'll add my data later**
+4. Go to **Admin → Databases → Add a database**
+
+| Field | Value |
+|---|---|
+| Database type | PostgreSQL |
+| Display name | ETF Analytics |
+| Host | `db.[YOUR-PROJECT-REF].supabase.co` |
+| Port | `5432` |
+| Database name | `postgres` |
+| Username | `postgres` |
+| Password | your Supabase DB password |
+| SSL | Required |
+
+5. Click **Save** — Metabase syncs the schema (~1 minute)
+
+---
+
+## Step 5 — Build the dashboard with Cursor AI (one time only)
+
+Enable the MCP server on your Oracle VM Metabase:
+
+1. Go to **Admin → AI → MCP** → toggle ON
+2. Enable **Cursor and VS Code**
+3. MCP endpoint: `http://<your-oracle-ip>:3000/api/metabase-mcp`
+
+Add to Cursor settings (Settings → MCP Servers):
+
+```json
+{
+  "mcpServers": {
+    "metabase": {
+      "url": "http://<your-oracle-ip>:3000/api/metabase-mcp",
+      "transport": "streamable-http"
+    }
+  }
+}
+```
+
+Use the starter prompt from [Step 6 of the local guide](#6-build-the-dashboard-with-cursor-ai) to build the dashboard.
+
+---
+
+## Daily routine after setup
+
+| What happens | When | Your involvement |
+|---|---|---|
+| ETL fetch + dbt run | Every weekday at 10:15 PM Berlin time | None — automatic |
+| Dashboard shows fresh data | Every morning | Open URL, read, close |
+| Dashboard improvements | Whenever you want | Prompt Cursor, done |
+
+**You never need to run anything manually.**
