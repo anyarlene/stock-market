@@ -9,4 +9,6 @@ etf_analytics:
       dbname: "{{ env_var('DB_NAME', 'etf_db') }}"
       schema: public
       threads: 4
+      # require SSL for hosted DBs (Supabase/Neon); 'prefer' works for local Docker
+      sslmode: "{{ env_var('DB_SSLMODE', 'prefer') }}"
   target: dev
