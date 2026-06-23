@@ -1,0 +1,67 @@
+#cloud-config
+#
+# Oracle Cloud VM — auto-setup script for Metabase
+# -------------------------------------------------
+# Paste this entire file into the "User data" field when creating
+# the VM on Oracle Cloud. It runs automatically on first boot.
+#
+# What it does:
+#   1. Installs Docker
+#   2. Writes the Metabase docker-compose file
+#   3. Starts Metabase on port 3000
+#   4. Opens port 3000 in the OS firewall (iptables)
+#
+# After the VM boots (~3 min) open: http://<your-oracle-ip>:3000
+
+package_update: true
+package_upgrade: false
+
+packages:
+  - docker.io
+  - docker-compose-plugin
+  - iptables-persistent
+
+runcmd:
+  # Allow ubuntu user to run Docker without sudo
+  - usermod -aG docker ubuntu
+
+  # Create app directory
+  - mkdir -p /opt/metabase
+
+  # Write the Metabase compose file
+  - |
+    cat > /opt/metabase/docker-compose.yml << 'COMPOSE'
+    services:
+      metabase:
+        image: metabase/metabase:latest
+        container_name: etf_metabase
+        restart: always
+        ports:
+          - "3000:3000"
+        volumes:
+          - metabase_data:/metabase-data
+        environment:
+          MB_DB_TYPE: h2
+          MB_DB_FILE: /metabase-data/metabase.db
+          MB_LOAD_SAMPLE_CONTENT: "false"
+          MB_INSTALL_ANALYTICS_DATABASE: "false"
+    volumes:
+      metabase_data:
+    COMPOSE
+
+  # Start Metabase
+  - cd /opt/metabase && docker compose up -d
+
+  # Open port 3000 in OS-level firewall
+  - iptables -I INPUT -p tcp --dport 3000 -j ACCEPT
+  - iptables -I INPUT -p tcp --dport 22 -j ACCEPT
+
+  # Persist iptables rules across reboots (non-interactive)
+  - echo "iptables-persistent iptables-persistent/autosave_v4 boolean true" | debconf-set-selections
+  - echo "iptables-persistent iptables-persistent/autosave_v6 boolean true" | debconf-set-selections
+  - netfilter-persistent save
+
+final_message: |
+  ✅ Metabase setup complete.
+  Open http://<this-vm-public-ip>:3000 in your browser.
+  First startup takes ~3 minutes (JVM warmup).
