@@ -1,6 +1,14 @@
 pandas>=1.5.0
 yfinance>=0.2.36
-SQLAlchemy>=1.4.0,<2.0.0
 python-dotenv>=1.0.0
 schedule>=1.2.0
 
+# PostgreSQL driver (same as project root requirements.txt)
+psycopg2-binary>=2.9.9
+
+# dbt — used by BashOperators in the ETF pipeline DAG
+dbt-core>=1.8.0
+dbt-postgres>=1.8.0
+
+# HTTP client — used by the Metabase sync task
+requests>=2.31.0

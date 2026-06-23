@@ -3,7 +3,6 @@ x-airflow-common:
   build:
     context: .
     dockerfile: Dockerfile
-  image: "${AIRFLOW_IMAGE_NAME:-apache/airflow:2.9.1}"
   env_file:
     - .env
   environment:
@@ -14,11 +13,25 @@ x-airflow-common:
     AIRFLOW__SCHEDULER__CATCHUP_BY_DEFAULT: "false"
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
     AIRFLOW__CORE__FERNET_KEY: ""
+    # Project path available inside all Airflow containers
     PYTHONPATH: /opt/airflow/project
+    # dbt profiles directory (profiles.yml lives in dbt/)
+    DBT_PROFILES_DIR: /opt/airflow/project/dbt
+    # PostgreSQL connection — set these in airflow/.env
+    # For local dev the defaults below match docker-compose.yml in the project root.
+    # For production point to your Supabase Session Pooler URL.
+    DATABASE_URL: ${DATABASE_URL:-postgresql://etf_user:etf_pass@host.docker.internal:5432/etf_db}
+    DB_HOST: ${DB_HOST:-host.docker.internal}
+    DB_PORT: ${DB_PORT:-5432}
+    DB_USER: ${DB_USER:-etf_user}
+    DB_PASSWORD: ${DB_PASSWORD:-etf_pass}
+    DB_NAME: ${DB_NAME:-etf_db}
+    DB_SSLMODE: ${DB_SSLMODE:-prefer}
   volumes:
     - ./dags:/opt/airflow/dags
     - ./logs:/opt/airflow/logs
     - ./plugins:/opt/airflow/plugins
+    # Entire repo available so DAGs can import analytics/ and run dbt/
     - ../:/opt/airflow/project
   user: "${AIRFLOW_UID:-50000}:${AIRFLOW_GID:-0}"
   depends_on:
@@ -29,7 +42,7 @@ x-airflow-common:
 
 services:
   postgres:
-    image: postgres:15
+    image: postgres:16
     environment:
       POSTGRES_USER: airflow
       POSTGRES_PASSWORD: airflow
@@ -49,7 +62,8 @@ services:
     command: >
       bash -c "
       airflow db migrate &&
-      airflow users create --role Admin --username admin --password admin --firstname Air --lastname Flow --email admin@example.com ||
+      airflow users create --role Admin --username admin --password admin
+        --firstname Air --lastname Flow --email admin@example.com ||
       true"
     restart: "no"
 
@@ -80,4 +94,3 @@ networks:
 
 volumes:
   postgres-db-volume:
-

@@ -2,47 +2,96 @@ version: 2
 
 sources:
   - name: raw
-    description: Raw tables written by the Python ETL pipeline
+    description: >
+      Raw tables written by the Python ETL pipeline (analytics/etl/).
+      These are the system-of-record tables that dbt reads but never writes to.
     schema: public
+
+    # Source freshness: warn if etf_data hasn't received new rows in 12 h,
+    # error if not updated in 24 h. Checked by `dbt source freshness`.
+    freshness:
+      warn_after: {count: 12, period: hour}
+      error_after: {count: 24, period: hour}
+
     tables:
       - name: etf_data
-        description: Raw OHLCV price data per ETF per day
+        description: >
+          Raw OHLCV price data per ETF per trading day, written by the
+          EnhancedMarketDataFetcher. Also stores EUR-converted price columns
+          populated by the CurrencyConverter ETL step.
+        loaded_at_field: created_at
+        freshness:
+          warn_after: {count: 12, period: hour}
+          error_after: {count: 24, period: hour}
         columns:
           - name: id
+            description: Surrogate primary key.
             tests: [unique, not_null]
           - name: symbol_id
+            description: Foreign key to the symbols table.
             tests: [not_null]
           - name: date
+            description: Trading date (market calendar date, not a timestamp).
             tests: [not_null]
           - name: close
+            description: Closing price in the ETF's native currency.
             tests: [not_null]
+          - name: close_eur
+            description: Closing price converted to EUR using historical FX rates.
 
       - name: symbols
-        description: ETF metadata (ticker, ISIN, currency)
+        description: >
+          Reference table of tracked ETFs. Loaded from
+          analytics/database/reference/symbols.csv.
         columns:
           - name: id
+            description: Surrogate primary key.
             tests: [unique, not_null]
           - name: ticker
+            description: Yahoo Finance ticker symbol (e.g. VOO, VUAA.L).
             tests: [unique, not_null]
+          - name: isin
+            description: International Securities Identification Number.
+            tests: [unique, not_null]
+          - name: currency
+            description: Native trading currency (USD, GBP, EUR).
 
       - name: currency_rates
-        description: Cached historical EUR exchange rates
+        description: >
+          Historical FX exchange rates cached from Yahoo Finance
+          (USDEUR=X, GBPEUR=X). Used by the intermediate layer to fill gaps
+          in EUR-converted prices.
         columns:
           - name: from_currency
+            description: Source currency code (e.g. USD, GBP).
+            tests: [not_null]
+          - name: to_currency
+            description: Target currency code (always EUR in this project).
             tests: [not_null]
           - name: rate_date
+            description: Date for which this exchange rate applies.
             tests: [not_null]
+          - name: exchange_rate
+            description: Spot rate on rate_date (from_currency → to_currency).
 
       - name: fifty_two_week_metrics
-        description: Calculated 52-week high/low metrics
+        description: >
+          52-week high and low prices calculated by the Python ETL at the end
+          of each incremental fetch. One row per symbol per calculation date.
         columns:
           - name: symbol_id
             tests: [not_null]
           - name: calculation_date
             tests: [not_null]
+          - name: high_52week
+            description: Highest closing price over the preceding 52 weeks.
+          - name: low_52week
+            description: Lowest closing price over the preceding 52 weeks.
 
       - name: decrease_thresholds
-        description: Entry point thresholds at 5–30% below 52-week high
+        description: >
+          Entry-point price levels at 5, 10, 15, 20, 25, and 30 percent below
+          the 52-week high. Computed by the Python ETL alongside 52-week metrics.
         columns:
           - name: symbol_id
             tests: [not_null]
