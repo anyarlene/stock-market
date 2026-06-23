@@ -3,40 +3,146 @@ version: 2
 models:
   - name: mart_price_history
     description: >
-      One row per ETF per trading day. Contains native-currency and EUR prices,
-      daily change metrics, and a 7-day rolling average. Primary table for
-      Metabase price history charts.
+      One row per ETF per trading day. The primary table consumed by Metabase
+      for price history charts and KPI cards.
+
+      Contains both native-currency and EUR prices, daily change metrics, and
+      a 7-day rolling average EUR close. Materialized as a table so Metabase
+      queries are fast without hitting the staging views each time.
     columns:
       - name: ticker
+        description: Yahoo Finance ticker (e.g. VOO, VUAA.L).
         tests: [not_null]
+      - name: etf_name
+        description: Full ETF name (e.g. Vanguard S&P 500 ETF).
+      - name: isin
+        description: International Securities Identification Number.
+      - name: exchange
+        description: Primary listing exchange.
+      - name: native_currency
+        description: Currency in which the ETF originally trades (USD or GBP).
       - name: date
+        description: Trading date (market calendar).
         tests: [not_null]
+      - name: open
+        description: Opening price in native currency.
+      - name: high
+        description: Intra-day high in native currency.
+      - name: low
+        description: Intra-day low in native currency.
       - name: close
+        description: Closing price in native currency.
         tests: [not_null]
+      - name: volume
+        description: Number of shares traded on this day.
+      - name: open_eur
+        description: Opening price converted to EUR.
+      - name: high_eur
+        description: Intra-day high converted to EUR.
+      - name: low_eur
+        description: Intra-day low converted to EUR.
       - name: close_eur
+        description: Closing price converted to EUR.
         tests: [not_null]
+      - name: daily_change
+        description: Absolute change in close price (native currency) vs open.
+      - name: daily_change_pct
+        description: Percentage change in close vs open (native currency).
+      - name: daily_change_eur
+        description: Absolute change in close_eur vs open_eur.
+      - name: daily_change_eur_pct
+        description: Percentage change in close_eur vs open_eur.
+      - name: close_eur_7d_avg
+        description: 7-day rolling average of close_eur. Useful for smoothing charts.
 
   - name: mart_52week_metrics
     description: >
-      Latest 52-week high/low per ETF, joined with the most recent price.
-      One row per ETF. Used for KPI cards and summary metrics table.
+      Latest 52-week high and low per ETF, joined with the most recent price.
+      One row per ETF. Used for KPI cards and the summary metrics table in Metabase.
     columns:
       - name: ticker
+        description: Yahoo Finance ticker.
         tests: [unique, not_null]
+      - name: etf_name
+        description: Full ETF name.
+      - name: isin
+        description: International Securities Identification Number.
+      - name: exchange
+        description: Primary listing exchange.
+      - name: native_currency
+        description: Native trading currency.
       - name: high_52week
+        description: Highest closing price over the preceding 52 weeks (native currency).
         tests: [not_null]
       - name: low_52week
+        description: Lowest closing price over the preceding 52 weeks (native currency).
         tests: [not_null]
+      - name: high_date
+        description: Date on which the 52-week high was recorded.
+      - name: low_date
+        description: Date on which the 52-week low was recorded.
+      - name: calculation_date
+        description: Date the metrics were last computed by the Python ETL.
+      - name: range_52week
+        description: Difference between the 52-week high and low (native currency).
+      - name: range_52week_pct
+        description: Range as a percentage of the 52-week low.
+      - name: latest_price_date
+        description: Date of the most recent close price available.
+      - name: latest_close
+        description: Most recent close price in native currency.
+      - name: latest_close_eur
+        description: Most recent close price in EUR.
+      - name: daily_change_eur_pct
+        description: Daily change percentage for the most recent trading day (EUR).
+      - name: distance_from_high
+        description: How far the current price is below the 52-week high (native currency).
+      - name: pct_below_52w_high
+        description: Current price as a percentage below the 52-week high.
+      - name: distance_from_low
+        description: How far the current price is above the 52-week low (native currency).
+      - name: pct_above_52w_low
+        description: Current price as a percentage above the 52-week low.
 
   - name: mart_entry_thresholds
     description: >
-      Entry point thresholds (5–30% below 52-week high) in long format.
-      One row per ETF per threshold level (6 rows per ETF = 30 total).
-      Used for the threshold bar chart and buying signal indicators.
+      Entry-point price levels at 5, 10, 15, 20, 25, and 30 percent below the
+      52-week high, in long (unpivoted) format. One row per ETF per threshold level
+      (6 levels × 5 ETFs = 30 rows total).
+
+      Used for the threshold bar chart and buying-signal indicators in Metabase.
+      The is_at_or_below_threshold flag makes it easy to build a conditional
+      color rule in Metabase: green when the price has reached a level.
     columns:
       - name: ticker
+        description: Yahoo Finance ticker.
         tests: [not_null]
+      - name: etf_name
+        description: Full ETF name.
+      - name: exchange
+        description: Primary listing exchange.
+      - name: native_currency
+        description: Native trading currency.
+      - name: calculation_date
+        description: Date the thresholds were last calculated.
+      - name: high_52week_price
+        description: The 52-week high price used as the reference for threshold calculations.
       - name: pct_below
+        description: Threshold level as an integer percentage (5, 10, 15, 20, 25, or 30).
         tests: [not_null]
       - name: threshold_price
+        description: Absolute price corresponding to this pct_below level.
         tests: [not_null]
+      - name: is_at_or_below_threshold
+        description: >
+          True when the current price is at or below the threshold price.
+          Use this column for conditional coloring in Metabase charts.
+      - name: gap_to_threshold
+        description: >
+          Current price minus threshold price (negative means price is below threshold).
+      - name: gap_to_threshold_pct
+        description: gap_to_threshold expressed as a percentage of the threshold price.
+      - name: latest_close
+        description: Most recent close price (native currency).
+      - name: latest_close_eur
+        description: Most recent close price in EUR.

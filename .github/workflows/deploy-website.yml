@@ -1,14 +1,12 @@
 name: Deploy static site to Pages
 
+# The landing page (website/index.html) is a static redirect to the Metabase
+# dashboard. No Python data generation is needed — just deploy the HTML/CSS/JS.
+
 on:
   push:
     branches: ["main"]
   workflow_dispatch:
-  workflow_run:
-    workflows: ["Production Market Data Automation"]
-    types:
-      - completed
-    branches: ["main"]
 
 permissions:
   contents: read
@@ -21,8 +19,6 @@ concurrency:
 
 jobs:
   deploy:
-    # Always run on push, or if production automation completed successfully
-    if: github.event_name == 'push' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -30,47 +26,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-      
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-      
-      - name: Debug - Check project structure
-        run: |
-          echo "Current directory: $(pwd)"
-          echo "Project structure:"
-          ls -la
-          echo "Analytics directory:"
-          ls -la analytics/
-          echo "Database directory:"
-          ls -la analytics/database/
-      
-      - name: Generate website data
-        run: |
-          echo "Generating website data files..."
-          python -m analytics.database.init_db || echo "Database already exists"
-          python -m analytics.database.load_symbols || echo "Symbols already loaded"
-          python -m analytics.etl.market_data_fetcher || echo "Market data fetch completed"
-          python -m analytics.etl.data_exporter || echo "Data export completed"
-          echo "Checking generated files:"
-          ls -la website/data/
-          echo "Verifying symbols.json contains all ETFs:"
-          cat website/data/symbols.json
-      
+
       - name: Setup Pages
         uses: actions/configure-pages@v4
-      
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: website
-      
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4

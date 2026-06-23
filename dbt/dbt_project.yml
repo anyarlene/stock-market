@@ -20,7 +20,15 @@ models:
   etf_analytics:
     staging:
       +materialized: view
+      +tags: ["staging"]
     intermediate:
       +materialized: view
+      +tags: ["intermediate"]
     marts:
       +materialized: table
+      +tags: ["marts"]
+
+# Grant SELECT on mart tables to the read-only Metabase DB user (if one exists)
+# Uncomment when a read-only role is configured:
+# on-run-end:
+#   - "{% if target.name == 'prod' %}GRANT SELECT ON ALL TABLES IN SCHEMA public TO metabase_reader{% endif %}"

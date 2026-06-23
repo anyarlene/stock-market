@@ -1,0 +1,57 @@
+version: 2
+
+models:
+  - name: stg_etf_data
+    description: >
+      Cleaned daily OHLCV prices joined with ETF metadata.
+      Filters to active symbols only. One row per active ETF per trading day.
+    columns:
+      - name: id
+        description: Raw primary key from etf_data.
+        tests: [unique, not_null]
+      - name: symbol_id
+        tests: [not_null]
+      - name: ticker
+        description: Yahoo Finance ticker (e.g. VOO, VUAA.L).
+        tests: [not_null]
+      - name: etf_name
+        description: Full ETF name from the symbols reference table.
+      - name: isin
+        description: International Securities Identification Number.
+      - name: exchange
+        description: Listing exchange (NYSE, NASDAQ, LSE).
+      - name: native_currency
+        description: Currency in which the ETF is priced (USD, GBP).
+      - name: date
+        description: Trading date.
+        tests: [not_null]
+      - name: open
+        description: Opening price in native currency.
+      - name: high
+        description: Intra-day high in native currency.
+      - name: low
+        description: Intra-day low in native currency.
+      - name: close
+        description: Closing price in native currency.
+        tests: [not_null]
+      - name: volume
+        description: Number of shares traded.
+      - name: close_eur
+        description: Closing price converted to EUR (may be null before int_etf_eur runs).
+
+  - name: stg_currency_rates
+    description: >
+      Validated historical FX exchange rates.
+      Filters out zero and negative rates that indicate missing Yahoo Finance data.
+    columns:
+      - name: id
+        tests: [unique, not_null]
+      - name: from_currency
+        tests: [not_null]
+      - name: to_currency
+        tests: [not_null]
+      - name: rate_date
+        tests: [not_null]
+      - name: exchange_rate
+        description: Spot exchange rate. Always positive (zero rates filtered out).
+        tests: [not_null]
