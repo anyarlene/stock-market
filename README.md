@@ -46,7 +46,7 @@ Demonstrates a complete, automated ELT pipeline from raw market data to live das
 | **Extract & Load** | Python + yfinance | Incremental fetch from Yahoo Finance → PostgreSQL |
 | **Transform** | dbt Core 1.8 | Staging → Intermediate → Mart models |
 | **Warehouse** | PostgreSQL 16 | Single source of truth (Supabase in production) |
-| **Visualization** | Metabase OSS | Live dashboards built via MCP + AI |
+| **Visualization** | Grafana Cloud (free) | Always-on dashboards, no server needed |
 | **CI / CD** | GitHub Actions | Tests on every PR; daily pipeline run in production |
 | **Infrastructure** | Docker Compose | Local dev (Airflow + PostgreSQL + Metabase) |
 
@@ -73,8 +73,8 @@ Demonstrates a complete, automated ELT pipeline from raw market data to live das
            │    ├── dbt_test               schema tests: not_null, unique
            │    └── dbt_source_freshness   SLA: warn >12 h, error >24 h
            │
-           └── visualize              (skipped when METABASE_URL not set)
-                └── sync_metabase      Metabase schema resync via REST API
+           └── visualize              (skipped when GRAFANA_URL not set)
+                └── provision_grafana  Grafana dashboard provisioning via REST API
 ```
 
 ---
@@ -162,16 +162,16 @@ dbt docs serve --profiles-dir .           # serve at http://localhost:8080
 
 | Service | Provider | Cost |
 |---|---|---|
-| PostgreSQL | [Supabase](https://supabase.com) free tier (500 MB) | Free |
+| PostgreSQL | [Supabase](https://supabase.com) free tier | Free |
 | Daily pipeline | GitHub Actions (schedule trigger) | Free |
-| Metabase dashboard | [Oracle Cloud Always Free](https://www.oracle.com/cloud/free/) ARM VM | Free |
+| Dashboard | [Grafana Cloud](https://grafana.com) free tier | Free |
 
-**After one-time setup:** open `http://<oracle-ip>:3000` from any browser.
-Data refreshes every weekday night automatically via GitHub Actions.
+**After one-time setup:** open your permanent Grafana URL from any device.
+Data refreshes every weekday night automatically. Nothing to run or start.
 
-Required GitHub secret: `DATABASE_URL` (Supabase Session Pooler URL — IPv4).
+Required GitHub secrets: `DATABASE_URL`, `GRAFANA_URL`, `GRAFANA_API_KEY`
 
-→ Full setup guide: `analytics/docs/metabase_setup.md`
+→ Full setup guide: `analytics/docs/grafana_setup.md`
 
 ---
 
@@ -222,7 +222,7 @@ stock-market/
 
 | File | Topic |
 |---|---|
-| `analytics/docs/metabase_setup.md` | Metabase local + production (Oracle + Supabase) |
+| `analytics/docs/grafana_setup.md` | Grafana Cloud setup (15 min, no card needed) |
 | `analytics/docs/stock-market-v1.md` | v1 architecture decisions |
 | `analytics/docs/airflow_setup.md` | Airflow local setup guide |
 
