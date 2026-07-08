@@ -1,6 +1,17 @@
+-- DuckDB schema for the ETF analytics warehouse.
+-- Numeric price/rate columns use DOUBLE (not DECIMAL) so the Python layer receives
+-- native floats, keeping arithmetic (e.g. 52-week threshold math) type-safe.
+
+-- Sequences backing the surrogate primary keys (DuckDB has no SERIAL keyword)
+CREATE SEQUENCE IF NOT EXISTS seq_symbols_id START 1;
+CREATE SEQUENCE IF NOT EXISTS seq_currency_rates_id START 1;
+CREATE SEQUENCE IF NOT EXISTS seq_etf_data_id START 1;
+CREATE SEQUENCE IF NOT EXISTS seq_fifty_two_week_metrics_id START 1;
+CREATE SEQUENCE IF NOT EXISTS seq_decrease_thresholds_id START 1;
+
 -- ETF/Stock symbols mapping table
 CREATE TABLE IF NOT EXISTS symbols (
-    id SERIAL PRIMARY KEY,
+    id INTEGER PRIMARY KEY DEFAULT nextval('seq_symbols_id'),
     isin TEXT NOT NULL UNIQUE,
     ticker TEXT NOT NULL,
     name TEXT NOT NULL UNIQUE,
@@ -13,29 +24,29 @@ CREATE TABLE IF NOT EXISTS symbols (
 
 -- Currency exchange rates table for historical rates
 CREATE TABLE IF NOT EXISTS currency_rates (
-    id SERIAL PRIMARY KEY,
+    id INTEGER PRIMARY KEY DEFAULT nextval('seq_currency_rates_id'),
     from_currency TEXT NOT NULL,
     to_currency TEXT NOT NULL,
     rate_date DATE NOT NULL,
-    exchange_rate DECIMAL(10,6) NOT NULL,
+    exchange_rate DOUBLE NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(from_currency, to_currency, rate_date)
 );
 
 -- ETF data table to store historical price data
 CREATE TABLE IF NOT EXISTS etf_data (
-    id SERIAL PRIMARY KEY,
+    id INTEGER PRIMARY KEY DEFAULT nextval('seq_etf_data_id'),
     symbol_id INTEGER NOT NULL,
     date DATE NOT NULL,
-    open DECIMAL(10,2),
-    high DECIMAL(10,2),
-    low DECIMAL(10,2),
-    close DECIMAL(10,2),
+    open DOUBLE,
+    high DOUBLE,
+    low DOUBLE,
+    close DOUBLE,
     volume BIGINT,
-    open_eur DECIMAL(10,2),
-    high_eur DECIMAL(10,2),
-    low_eur DECIMAL(10,2),
-    close_eur DECIMAL(10,2),
+    open_eur DOUBLE,
+    high_eur DOUBLE,
+    low_eur DOUBLE,
+    close_eur DOUBLE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(symbol_id) REFERENCES symbols(id),
     UNIQUE(symbol_id, date)
@@ -43,11 +54,11 @@ CREATE TABLE IF NOT EXISTS etf_data (
 
 -- 52-week metrics table
 CREATE TABLE IF NOT EXISTS fifty_two_week_metrics (
-    id SERIAL PRIMARY KEY,
+    id INTEGER PRIMARY KEY DEFAULT nextval('seq_fifty_two_week_metrics_id'),
     symbol_id INTEGER NOT NULL,
     calculation_date DATE NOT NULL,
-    high_52week DECIMAL(10,2),
-    low_52week DECIMAL(10,2),
+    high_52week DOUBLE,
+    low_52week DOUBLE,
     high_date DATE,
     low_date DATE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -57,16 +68,16 @@ CREATE TABLE IF NOT EXISTS fifty_two_week_metrics (
 
 -- Decrease thresholds tracking table
 CREATE TABLE IF NOT EXISTS decrease_thresholds (
-    id SERIAL PRIMARY KEY,
+    id INTEGER PRIMARY KEY DEFAULT nextval('seq_decrease_thresholds_id'),
     symbol_id INTEGER NOT NULL,
     calculation_date DATE NOT NULL,
-    high_52week_price DECIMAL(10,2),
-    decrease_5_price DECIMAL(10,2),
-    decrease_10_price DECIMAL(10,2),
-    decrease_15_price DECIMAL(10,2),
-    decrease_20_price DECIMAL(10,2),
-    decrease_25_price DECIMAL(10,2),
-    decrease_30_price DECIMAL(10,2),
+    high_52week_price DOUBLE,
+    decrease_5_price DOUBLE,
+    decrease_10_price DOUBLE,
+    decrease_15_price DOUBLE,
+    decrease_20_price DOUBLE,
+    decrease_25_price DOUBLE,
+    decrease_30_price DOUBLE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(symbol_id) REFERENCES symbols(id),
     UNIQUE(symbol_id, calculation_date)

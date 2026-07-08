@@ -38,6 +38,8 @@ wheels/
 # Database
 *.db
 *.sqlite3
+*.duckdb
+*.duckdb.wal
 
 # Logs
 *.log

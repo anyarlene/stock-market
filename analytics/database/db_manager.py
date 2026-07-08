@@ -1,49 +1,53 @@
-"""Database manager for ETF analytics."""
+"""Database manager for ETF analytics (DuckDB single-file warehouse)."""
 
 import os
-import psycopg2
 from datetime import datetime, date
+from pathlib import Path
 from typing import List, Dict, Any, Optional
 import pandas as pd
 import logging
 
+import duckdb
+
 logger = logging.getLogger(__name__)
 
 
-def _build_database_url() -> str:
-    """Build the PostgreSQL connection URL from environment variables."""
-    url = os.environ.get("DATABASE_URL")
-    if url:
-        return url
-    host = os.environ.get("DB_HOST", "localhost")
-    port = os.environ.get("DB_PORT", "5432")
-    user = os.environ.get("DB_USER", "etf_user")
-    password = os.environ.get("DB_PASSWORD", "etf_pass")
-    dbname = os.environ.get("DB_NAME", "etf_db")
-    return f"postgresql://{user}:{password}@{host}:{port}/{dbname}"
+def _build_duckdb_path() -> str:
+    """Resolve the DuckDB warehouse file path.
+
+    Honours DUCKDB_PATH when set (use an absolute path to stay consistent across
+    the Python ETL and dbt). Otherwise defaults to `warehouse.duckdb` at the repo
+    root so the ETL (run from the root) and dbt (run from `dbt/`, using
+    `../warehouse.duckdb`) resolve to the same file.
+    """
+    path = os.environ.get("DUCKDB_PATH")
+    if path:
+        return path
+    return str(Path(__file__).resolve().parents[2] / "warehouse.duckdb")
 
 
 class DatabaseManager:
-    def __init__(self, database_url: str = None):
-        """Initialize with a PostgreSQL connection URL."""
-        self.database_url = database_url or _build_database_url()
+    def __init__(self, db_path: str = None):
+        """Initialize with a DuckDB file path."""
+        self.db_path = db_path or _build_duckdb_path()
         self.conn = None
         self.cursor = None
 
     def connect(self):
         """Open a database connection."""
         try:
-            if self.conn is None or self.conn.closed:
-                self.conn = psycopg2.connect(self.database_url)
-                self.cursor = self.conn.cursor()
-        except psycopg2.Error as e:
+            if self.conn is None:
+                self.conn = duckdb.connect(self.db_path)
+                # DuckDB's connection object doubles as the cursor.
+                self.cursor = self.conn
+        except duckdb.Error as e:
             logger.error(f"Error connecting to database: {e}")
             raise
 
     def disconnect(self):
         """Close the database connection."""
         try:
-            if self.conn and not self.conn.closed:
+            if self.conn is not None:
                 self.conn.close()
         finally:
             self.conn = None
@@ -56,14 +60,14 @@ class DatabaseManager:
             with open(schema_path, "r") as f:
                 schema = f.read()
             self.connect()
-            # psycopg2 does not support executescript; run each statement separately
+            # DuckDB executes one statement per call; run them separately.
             statements = [s.strip() for s in schema.split(";") if s.strip()]
             for stmt in statements:
                 self.cursor.execute(stmt)
             self.conn.commit()
             logger.info("Database initialized successfully")
             print("Database initialized successfully")
-        except (psycopg2.Error, IOError) as e:
+        except (duckdb.Error, IOError) as e:
             logger.error(f"Error initializing database: {e}")
             raise
         finally:
@@ -79,14 +83,14 @@ class DatabaseManager:
                 """
                 SELECT date, open, high, low, close, volume
                 FROM etf_data
-                WHERE symbol_id = %s AND date BETWEEN %s AND %s
+                WHERE symbol_id = ? AND date BETWEEN ? AND ?
                 ORDER BY date
             """,
                 (symbol_id, start_date, end_date),
             )
             columns = ["date", "open", "high", "low", "close", "volume"]
             return [dict(zip(columns, row)) for row in self.cursor.fetchall()]
-        except psycopg2.Error as e:
+        except duckdb.Error as e:
             logger.error(f"Error getting market data: {e}")
             raise
         finally:
@@ -106,7 +110,7 @@ class DatabaseManager:
             )
             columns = ["id", "isin", "ticker", "name", "asset_type", "exchange", "currency"]
             return [dict(zip(columns, row)) for row in self.cursor.fetchall()]
-        except psycopg2.Error as e:
+        except duckdb.Error as e:
             logger.error(f"Error getting active symbols: {e}")
             raise
         finally:
@@ -120,7 +124,7 @@ class DatabaseManager:
                 """
                 SELECT id, isin, ticker, name, asset_type, exchange, currency, is_active
                 FROM symbols
-                WHERE isin = %s
+                WHERE isin = ?
             """,
                 (isin,),
             )
@@ -133,7 +137,7 @@ class DatabaseManager:
                     row,
                 )
             )
-        except psycopg2.Error as e:
+        except duckdb.Error as e:
             logger.error(f"Error getting symbol by ISIN: {e}")
             raise
         finally:
@@ -154,7 +158,7 @@ class DatabaseManager:
             self.cursor.execute(
                 """
                 INSERT INTO symbols (isin, ticker, name, asset_type, exchange, currency)
-                VALUES (%s, %s, %s, %s, %s, %s)
+                VALUES (?, ?, ?, ?, ?, ?)
                 RETURNING id
             """,
                 (isin, ticker, name, asset_type, exchange, currency),
@@ -162,7 +166,7 @@ class DatabaseManager:
             symbol_id = self.cursor.fetchone()[0]
             self.conn.commit()
             return symbol_id
-        except psycopg2.Error as e:
+        except duckdb.Error as e:
             logger.error(f"Error adding symbol: {e}")
             raise
         finally:
@@ -174,7 +178,7 @@ class DatabaseManager:
             self.connect()
             self.cursor.execute("DELETE FROM symbols")
             self.conn.commit()
-        except psycopg2.Error as e:
+        except duckdb.Error as e:
             logger.error(f"Error clearing symbols: {e}")
             raise
         finally:
@@ -186,8 +190,11 @@ class DatabaseManager:
             from analytics.utils.currency_converter import CurrencyConverter
 
             converter = CurrencyConverter()
-            self.connect()
 
+            # Build the payload first (no DB connection needed yet). Currency
+            # conversion opens its own DuckDB connection to cache FX rates, so it
+            # must run BEFORE we open the writer connection — DuckDB allows only
+            # one read-write connection to a file at a time.
             price_data_list = []
             for index, row in data.iterrows():
                 price_data_list.append(
@@ -205,13 +212,14 @@ class DatabaseManager:
                 logger.info(f"Converting {len(price_data_list)} records from {currency} to EUR")
                 price_data_list = converter.convert_price_data_batch(price_data_list, currency)
 
+            self.connect()
             for price_data in price_data_list:
                 self.cursor.execute(
                     """
                     INSERT INTO etf_data
                         (symbol_id, date, open, high, low, close, volume,
                          open_eur, high_eur, low_eur, close_eur)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ON CONFLICT (symbol_id, date) DO UPDATE SET
                         open        = EXCLUDED.open,
                         high        = EXCLUDED.high,
@@ -241,7 +249,7 @@ class DatabaseManager:
             self.conn.commit()
             logger.info(f"Inserted {len(price_data_list)} records for symbol {symbol_id}")
 
-        except psycopg2.Error as e:
+        except duckdb.Error as e:
             logger.error(f"Error inserting market data: {e}")
             raise
         finally:
@@ -264,7 +272,7 @@ class DatabaseManager:
                 """
                 INSERT INTO fifty_two_week_metrics
                     (symbol_id, calculation_date, high_52week, low_52week, high_date, low_date)
-                VALUES (%s, %s, %s, %s, %s, %s)
+                VALUES (?, ?, ?, ?, ?, ?)
                 ON CONFLICT (symbol_id, calculation_date) DO UPDATE SET
                     high_52week = EXCLUDED.high_52week,
                     low_52week  = EXCLUDED.low_52week,
@@ -289,7 +297,7 @@ class DatabaseManager:
                     (symbol_id, calculation_date, high_52week_price,
                      decrease_5_price, decrease_10_price, decrease_15_price,
                      decrease_20_price, decrease_25_price, decrease_30_price)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT (symbol_id, calculation_date) DO UPDATE SET
                     high_52week_price  = EXCLUDED.high_52week_price,
                     decrease_5_price   = EXCLUDED.decrease_5_price,
@@ -315,7 +323,7 @@ class DatabaseManager:
             self.conn.commit()
             logger.info(f"Stored metrics and thresholds for symbol {symbol_id}")
 
-        except psycopg2.Error as e:
+        except duckdb.Error as e:
             logger.error(f"Error storing metrics: {e}")
             raise
         finally:
