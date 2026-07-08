@@ -1,5 +1,8 @@
 # Stock-Market v1 — Next Phase Plan
 
+> **⚠️ SUPERSEDED** by `stock-market-v2-reporting-layer.md` (v3 DuckDB-only roadmap).
+> Kept for historical reference only — not the active plan.
+
 > **Status:** Pending review before implementation
 > **Goal:** Replace the current static Chart.js visualization with a modern, AI-built Metabase dashboard. Archive the Investment Strategy Planner. Keep the full stack cost-free.
 

@@ -81,16 +81,3 @@ jobs:
         dbt run --profiles-dir .
         dbt test --profiles-dir .
         cd ..
-
-    - name: Provision Grafana dashboard (runs only when GRAFANA secrets are set)
-      env:
-        GRAFANA_URL: ${{ secrets.GRAFANA_URL }}
-        GRAFANA_API_KEY: ${{ secrets.GRAFANA_API_KEY }}
-      run: |
-        if [ -n "$GRAFANA_URL" ] && [ -n "$GRAFANA_API_KEY" ]; then
-          echo "Provisioning Grafana dashboard..."
-          pip install requests --quiet
-          python scripts/provision_grafana.py
-        else
-          echo "GRAFANA_URL / GRAFANA_API_KEY not set — skipping Grafana step"
-        fi
