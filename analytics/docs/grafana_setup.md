@@ -1,5 +1,8 @@
 # Grafana Cloud Setup — ETF Analytics Dashboard
 
+> **⚠️ SUPERSEDED** by `stock-market-v2-reporting-layer.md` (v3 DuckDB-only roadmap).
+> Grafana is retired as the reporting layer; this document is kept for historical reference only.
+
 **Goal:** live dashboard at a permanent URL, always on, cost-free, no server to manage.
 
 **Time needed:** ~15 minutes (one time only).

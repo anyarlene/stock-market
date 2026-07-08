@@ -1,5 +1,8 @@
 # Get Metabase Live — Oracle Cloud Setup
 
+> **⚠️ SUPERSEDED** by `stock-market-v2-reporting-layer.md` (v3 DuckDB-only roadmap).
+> The Oracle Cloud VM + Metabase infrastructure is retired; this document is kept for historical reference only.
+
 **Goal:** dashboard accessible from any browser, always on, zero cost, zero daily work.
 
 **Time needed:** ~20 minutes (one time only).

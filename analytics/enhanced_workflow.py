@@ -36,8 +36,6 @@ sys.path.append(str(analytics_path))
 from database.db_manager import DatabaseManager
 from database.load_symbols import load_symbols
 from etl.enhanced_market_data_fetcher import EnhancedMarketDataFetcher
-from etl.currency_converter_etl import main as currency_converter_main
-from etl.data_exporter import main as data_exporter_main
 
 class EnhancedWorkflowOrchestrator:
     """Enhanced workflow orchestrator with comprehensive error handling."""
@@ -131,26 +129,6 @@ class EnhancedWorkflowOrchestrator:
             logger.error(f"❌ Market data fetch failed: {e}")
             raise
     
-    def run_currency_conversion(self) -> bool:
-        """Run currency conversion ETL."""
-        try:
-            logger.info("💱 Running currency conversion...")
-            currency_converter_main()
-            return True
-        except Exception as e:
-            logger.error(f"❌ Currency conversion failed: {e}")
-            raise
-    
-    def run_data_export(self) -> bool:
-        """Run data export for website."""
-        try:
-            logger.info("📤 Running data export...")
-            data_exporter_main()
-            return True
-        except Exception as e:
-            logger.error(f"❌ Data export failed: {e}")
-            raise
-    
     def save_workflow_results(self) -> None:
         """Save workflow results to file."""
         try:
@@ -213,14 +191,6 @@ class EnhancedWorkflowOrchestrator:
             if not self.run_step("Market Data Fetch", self.run_market_data_fetch):
                 return False
             
-            # Step 3: Currency conversion
-            if not self.run_step("Currency Conversion", self.run_currency_conversion):
-                return False
-            
-            # Step 4: Data export
-            if not self.run_step("Data Export", self.run_data_export):
-                return False
-            
             # Save results and print summary
             self.save_workflow_results()
             self.print_summary()
@@ -257,7 +227,7 @@ class EnhancedWorkflowOrchestrator:
 def main():
     """Main execution function with command line arguments."""
     parser = argparse.ArgumentParser(description='Enhanced Workflow Orchestrator')
-    parser.add_argument('--step', choices=['full', 'incremental', 'fetch', 'currency', 'export'],
+    parser.add_argument('--step', choices=['full', 'incremental', 'fetch'],
                        default='full', help='Which step(s) to run')
     parser.add_argument('--verbose', '-v', action='store_true', 
                        help='Enable verbose logging')
@@ -276,10 +246,6 @@ def main():
             success = orchestrator.run_incremental_update()
         elif args.step == 'fetch':
             success = orchestrator.run_step("Market Data Fetch", orchestrator.run_market_data_fetch)
-        elif args.step == 'currency':
-            success = orchestrator.run_step("Currency Conversion", orchestrator.run_currency_conversion)
-        elif args.step == 'export':
-            success = orchestrator.run_step("Data Export", orchestrator.run_data_export)
         else:
             logger.error(f"Unknown step: {args.step}")
             sys.exit(1)

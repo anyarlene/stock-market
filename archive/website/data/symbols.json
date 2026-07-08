@@ -1,0 +1,32 @@
+[
+  {
+    "ticker": "QQQ",
+    "name": "Invesco QQQ Trust",
+    "isin": "US46090E1038",
+    "nativeCurrency": "USD"
+  },
+  {
+    "ticker": "VOO",
+    "name": "Vanguard S&P 500 ETF",
+    "isin": "US9229083632",
+    "nativeCurrency": "USD"
+  },
+  {
+    "ticker": "VUAA.L",
+    "name": "Vanguard S&P 500 UCITS ETF",
+    "isin": "IE00BFMXXD54",
+    "nativeCurrency": "USD"
+  },
+  {
+    "ticker": "VTI",
+    "name": "Vanguard Total Stock Market ETF",
+    "isin": "US9229087690",
+    "nativeCurrency": "USD"
+  },
+  {
+    "ticker": "CNDX.L",
+    "name": "iShares NASDAQ 100 UCITS ETF",
+    "isin": "IE00B53SZB19",
+    "nativeCurrency": "GBP"
+  }
+]

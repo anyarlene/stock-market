@@ -1,5 +1,8 @@
 # Metabase Setup Guide
 
+> **⚠️ SUPERSEDED** by `stock-market-v2-reporting-layer.md` (v3 DuckDB-only roadmap).
+> Metabase is retired as the production dashboard; this document is kept for historical reference only.
+
 This guide covers everything needed to start Metabase, connect it to PostgreSQL, and use Cursor's AI agent to build the ETF dashboard automatically.
 
 ---
