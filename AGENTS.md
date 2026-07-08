@@ -17,6 +17,11 @@ This repo is an ETF data-engineering pipeline: **Python ETL (yfinance) → DuckD
 1. Full ETL (creates schema, loads symbols, fetches from Yahoo Finance — needs internet): `PYTHONPATH=. .venv/bin/python analytics/enhanced_workflow.py --step full`. Use `--step incremental` afterwards for daily top-ups. `--step full|incremental|fetch` are the only options; note `load_symbols.py` alone does NOT create the schema, so a fresh DB must be initialized via `--step full` (or `analytics/database/init_db.py`) first.
 2. Build dbt models (run from `dbt/`, always pass `--profiles-dir .`): `dbt deps`, then `dbt run --profiles-dir .`, `dbt test --profiles-dir .`. All 6 models build and the 41 data tests pass, including `mart_52week_metrics` and `mart_entry_thresholds` (now populated).
 
+### Streamlit dashboard (`dashboard/`)
+- Run locally from `dashboard/`: `/workspace/.venv/bin/streamlit run app.py` (install its deps with `pip install -r dashboard/requirements.txt` if needed). It reads marts from the DuckDB warehouse.
+- Data resolution order: `$DUCKDB_PATH` → a local `warehouse.duckdb` in the repo (dev) → the published `latest-data` GitHub Release asset (`$WAREHOUSE_URL`). So locally it "just works" if `warehouse.duckdb` exists; in production (Streamlit Community Cloud) it downloads the Release asset.
+- `dashboard/` has its own `requirements.txt` for Streamlit Cloud; it is separate from the pipeline's root `requirements.txt`.
+
 ### Tests / lint
 - CI health check (see `.github/workflows/test_automation.yml`): `PYTHONPATH=. .venv/bin/python analytics/test_enhanced_workflow.py`. No DB server needed — it creates/uses the DuckDB file.
 - Lint tools are installed (`black`, `isort`, `flake8`) but the existing codebase is NOT formatted to their defaults, so they report many pre-existing style findings — that is expected, not a regression.

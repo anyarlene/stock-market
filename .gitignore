@@ -74,6 +74,7 @@ dbt/logs/
 dbt/.user.yml
 
 # Virtual environments
+.venv/
 market-env/
 venv/
 env/
