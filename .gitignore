@@ -71,6 +71,7 @@ airflow/logs/
 # dbt artifacts
 dbt/target/
 dbt/logs/
+dbt/dbt_packages/
 dbt/.user.yml
 
 # Virtual environments
