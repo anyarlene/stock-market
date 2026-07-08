@@ -15,24 +15,6 @@ jobs:
   run-tests:
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_DB: etf_test
-          POSTGRES_USER: etf_user
-          POSTGRES_PASSWORD: etf_pass
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U etf_user -d etf_test"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    env:
-      DATABASE_URL: postgresql://etf_user:etf_pass@localhost:5432/etf_test
-
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -48,5 +30,6 @@ jobs:
         pip install -r requirements.txt
 
     - name: Run automation health checks
+      # Runs against an ephemeral local DuckDB file — no database server needed.
       run: |
         PYTHONPATH=. python analytics/test_enhanced_workflow.py

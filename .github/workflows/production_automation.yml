@@ -1,35 +1,27 @@
-name: Production Market Data Automation
+name: Production Data Pipeline
 
 on:
   schedule:
-    # Runs Monday through Friday at 10:15 PM Berlin time (UTC+1, so 21:15 UTC)
+    # Runs Monday through Friday at 21:15 UTC (22:15 Berlin in winter)
     - cron: '15 21 * * 1-5'
   workflow_dispatch:  # Allows manual trigger
 
+# Needed to publish the built warehouse as a GitHub Release asset
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  update-market-data:
+  build-and-publish:
     runs-on: ubuntu-latest
 
     env:
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      # Supabase requires SSL; 'require' is safe for any hosted PostgreSQL
-      DB_SSLMODE: require
-      # Individual vars parsed from DATABASE_URL for dbt (see "Parse DB vars" step)
-      DB_HOST: ""
-      DB_PORT: ""
-      DB_USER: ""
-      DB_PASSWORD: ""
-      DB_NAME: ""
+      # Single warehouse file, shared by the ETL (runs from repo root) and dbt
+      # (runs from dbt/). Absolute path keeps both in sync.
+      DUCKDB_PATH: ${{ github.workspace }}/warehouse.duckdb
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      with:
-        ref: main
-        fetch-depth: 0
 
     - name: Set up Python
       uses: actions/setup-python@v4
@@ -41,43 +33,28 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
-    - name: Parse DATABASE_URL into dbt env vars
-      run: |
-        python - <<'EOF'
-        import os, urllib.parse, pathlib
-        url = urllib.parse.urlparse(os.environ["DATABASE_URL"])
-        env_lines = [
-            f"DB_HOST={url.hostname}",
-            f"DB_PORT={url.port or 5432}",
-            f"DB_USER={url.username}",
-            f"DB_PASSWORD={url.password}",
-            f"DB_NAME={url.path.lstrip('/')}",
-        ]
-        with open(os.environ["GITHUB_ENV"], "a") as f:
-            f.write("\n".join(env_lines) + "\n")
-        print("DB vars written to GITHUB_ENV")
-        EOF
-
-    - name: Initialize database (if needed)
-      run: |
-        cd analytics
-        PYTHONPATH=.. python database/init_db.py || echo "Tables already exist"
-        PYTHONPATH=.. python database/load_symbols.py || echo "Symbols already loaded"
-        cd ..
-
-    - name: Run market data update
-      run: |
-        PYTHONPATH=. python analytics/enhanced_workflow.py --step incremental
+    - name: Build warehouse (extract + load + fetch)
+      # Each run rebuilds the full DuckDB warehouse from scratch (the runner is
+      # ephemeral). The dataset is small, so a full fetch is fast and idempotent.
+      run: PYTHONPATH=. python analytics/enhanced_workflow.py --step full
 
     - name: Show database status
-      run: |
-        echo "=== Database Status ==="
-        PYTHONPATH=. python analytics/database_diagnostic.py
+      run: PYTHONPATH=. python analytics/database_diagnostic.py
 
-    - name: Run dbt transformations
+    - name: Transform and test (dbt)
       run: |
         cd dbt
         dbt deps
         dbt run --profiles-dir .
         dbt test --profiles-dir .
-        cd ..
+
+    - name: Publish DuckDB warehouse to GitHub Release
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        # Ensure the release exists, then overwrite its asset with the fresh build.
+        gh release view latest-data >/dev/null 2>&1 \
+          || gh release create latest-data \
+               --title "Latest data" \
+               --notes "Automated daily DuckDB warehouse build. Consumed by the Streamlit dashboard."
+        gh release upload latest-data "$DUCKDB_PATH" --clobber
