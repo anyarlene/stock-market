@@ -2,7 +2,7 @@
 
 ## Cursor Cloud specific instructions
 
-This repo is an ETF data-engineering pipeline: **Python ETL (yfinance) → DuckDB (single file) → dbt** (marts consumed downstream). Reporting is mid-migration per the v3 roadmap (`analytics/docs/stock-market-v2-reporting-layer.md`): the reporting layer will be a Streamlit dashboard reading the DuckDB file. Airflow, Metabase, Grafana, the Chart.js `website/`, and legacy ETL scripts have been retired to `archive/` and are NOT part of the running system.
+This repo is an ETF data-engineering pipeline: **Python ETL (yfinance) → DuckDB (single file) → dbt → Streamlit dashboard**. The design/roadmap is `analytics/docs/stock-market-v2-reporting-layer.md`. Airflow, Metabase, Grafana, the Chart.js `website/`, legacy ETL scripts, and superseded setup docs have been retired to `archive/` and are NOT part of the running system.
 
 ### Environment layout
 - Python deps live in a virtualenv at `.venv` (created by the startup update script). Run tools with `.venv/bin/python`, `.venv/bin/dbt`, etc., or `source .venv/bin/activate`.
@@ -28,5 +28,5 @@ This repo is an ETF data-engineering pipeline: **Python ETL (yfinance) → DuckD
 
 ### Notes / caveats
 - `dbt source freshness --profiles-dir .` only computes for the `etf_data` source (it has a `loaded_at_field`); the other sources have none and error by design on the DuckDB adapter.
-- The GitHub Actions workflows (`production_automation.yml`, `test_automation.yml`) still assume PostgreSQL and are pending the Phase 2 rewrite; they are inconsistent with the DuckDB pipeline until then.
+- `production_automation.yml` runs the full pipeline daily and publishes `warehouse.duckdb` as the `latest-data` GitHub Release asset (built-in `GITHUB_TOKEN`, `contents: write`); the Streamlit app downloads that asset. It only runs on schedule or manual `workflow_dispatch`.
 - (Historical, archived) `archive/analytics/etl/data_exporter.py` used SQLite-only syntax — do not resurrect it as-is; the DuckDB/Streamlit path replaces it.

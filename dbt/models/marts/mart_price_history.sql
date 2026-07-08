@@ -2,7 +2,7 @@
   mart_price_history
   ------------------
   One row per ETF per trading day with both native-currency and EUR prices.
-  This is the primary table Metabase uses for price history charts and KPI cards.
+  This is the primary table the dashboard uses for price history charts and KPI cards.
 */
 
 with base as (

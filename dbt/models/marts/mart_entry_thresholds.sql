@@ -2,7 +2,7 @@
   mart_entry_thresholds
   ---------------------
   Entry point prices at 5, 10, 15, 20, 25, 30 percent below the 52-week high per ETF.
-  Used for the threshold bar chart and table in Metabase.
+  Used for the threshold bar chart and table in the dashboard.
   Unpivoted to long format so each row is one threshold level.
 */
 

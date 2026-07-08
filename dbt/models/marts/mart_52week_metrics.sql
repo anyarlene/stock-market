@@ -2,7 +2,7 @@
   mart_52week_metrics
   -------------------
   Latest 52-week high/low metrics per ETF, joined with the most recent price.
-  Used for KPI cards and summary table in Metabase.
+  Used for KPI cards and summary table in the dashboard.
 */
 
 with metrics as (

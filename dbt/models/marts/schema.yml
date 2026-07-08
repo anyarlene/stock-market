@@ -3,11 +3,11 @@ version: 2
 models:
   - name: mart_price_history
     description: >
-      One row per ETF per trading day. The primary table consumed by Metabase
+      One row per ETF per trading day. The primary table consumed by the dashboard
       for price history charts and KPI cards.
 
       Contains both native-currency and EUR prices, daily change metrics, and
-      a 7-day rolling average EUR close. Materialized as a table so Metabase
+      a 7-day rolling average EUR close. Materialized as a table so the dashboard
       queries are fast without hitting the staging views each time.
     columns:
       - name: ticker
@@ -58,7 +58,7 @@ models:
   - name: mart_52week_metrics
     description: >
       Latest 52-week high and low per ETF, joined with the most recent price.
-      One row per ETF. Used for KPI cards and the summary metrics table in Metabase.
+      One row per ETF. Used for KPI cards and the summary metrics table in the dashboard.
     columns:
       - name: ticker
         description: Yahoo Finance ticker.
@@ -110,9 +110,9 @@ models:
       52-week high, in long (unpivoted) format. One row per ETF per threshold level
       (6 levels × 5 ETFs = 30 rows total).
 
-      Used for the threshold bar chart and buying-signal indicators in Metabase.
+      Used for the threshold bar chart and buying-signal indicators in the dashboard.
       The is_at_or_below_threshold flag makes it easy to build a conditional
-      color rule in Metabase: green when the price has reached a level.
+      color rule in the dashboard: green when the price has reached a level.
     columns:
       - name: ticker
         description: Yahoo Finance ticker.
@@ -136,7 +136,7 @@ models:
       - name: is_at_or_below_threshold
         description: >
           True when the current price is at or below the threshold price.
-          Use this column for conditional coloring in Metabase charts.
+          Use this column for conditional coloring in dashboard charts.
       - name: gap_to_threshold
         description: >
           Current price minus threshold price (negative means price is below threshold).
