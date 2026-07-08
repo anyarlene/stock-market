@@ -56,7 +56,7 @@ class EnhancedMarketDataFetcher:
             )
             result = self.db.cursor.fetchone()
             if result and result[0]:
-                # PostgreSQL returns a date object directly
+                # DuckDB returns a date object directly
                 return result[0] if isinstance(result[0], date) else datetime.strptime(str(result[0]), "%Y-%m-%d").date()
             return None
         except Exception as e:
