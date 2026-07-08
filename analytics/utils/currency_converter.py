@@ -8,32 +8,29 @@ USD and GBP prices to EUR for European market analysis.
 
 import yfinance as yf
 from datetime import datetime, date, timedelta
+from pathlib import Path
 from typing import Optional, Dict, Any, List
 import logging
 import os
 
-import psycopg2
+import duckdb
 
 logger = logging.getLogger(__name__)
 
 
-def _build_database_url() -> str:
-    url = os.environ.get("DATABASE_URL")
-    if url:
-        return url
-    host = os.environ.get("DB_HOST", "localhost")
-    port = os.environ.get("DB_PORT", "5432")
-    user = os.environ.get("DB_USER", "etf_user")
-    password = os.environ.get("DB_PASSWORD", "etf_pass")
-    dbname = os.environ.get("DB_NAME", "etf_db")
-    return f"postgresql://{user}:{password}@{host}:{port}/{dbname}"
+def _build_duckdb_path() -> str:
+    """Resolve the DuckDB warehouse path (mirrors database.db_manager)."""
+    path = os.environ.get("DUCKDB_PATH")
+    if path:
+        return path
+    return str(Path(__file__).resolve().parents[2] / "warehouse.duckdb")
 
 
 class CurrencyConverter:
     """Handles currency conversions for ETF data with historical rate support."""
 
     def __init__(self, db_path: str = None):
-        self.database_url = _build_database_url()
+        self.db_path = db_path or _build_duckdb_path()
         self.exchange_rates = {}
         self.last_update = None
     
@@ -95,13 +92,12 @@ class CurrencyConverter:
         """Store exchange rates in the database."""
         conn = None
         try:
-            conn = psycopg2.connect(self.database_url)
-            cursor = conn.cursor()
+            conn = duckdb.connect(self.db_path)
             for date_str, rate in rates.items():
-                cursor.execute(
+                conn.execute(
                     """
                     INSERT INTO currency_rates (from_currency, to_currency, rate_date, exchange_rate)
-                    VALUES (%s, %s, %s, %s)
+                    VALUES (?, ?, ?, ?)
                     ON CONFLICT (from_currency, to_currency, rate_date)
                     DO UPDATE SET exchange_rate = EXCLUDED.exchange_rate
                     """,
@@ -109,32 +105,30 @@ class CurrencyConverter:
                 )
             conn.commit()
             logger.info(f"Stored {len(rates)} exchange rates for {from_currency}/{to_currency}")
-        except psycopg2.Error as e:
+        except duckdb.Error as e:
             logger.error(f"Error storing exchange rates: {e}")
         finally:
-            if conn and not conn.closed:
+            if conn is not None:
                 conn.close()
     
     def get_cached_exchange_rate(self, from_currency: str, to_currency: str, target_date: date) -> Optional[float]:
         """Get exchange rate from database cache."""
         conn = None
         try:
-            conn = psycopg2.connect(self.database_url)
-            cursor = conn.cursor()
-            cursor.execute(
+            conn = duckdb.connect(self.db_path)
+            row = conn.execute(
                 """
                 SELECT exchange_rate FROM currency_rates
-                WHERE from_currency = %s AND to_currency = %s AND rate_date = %s
+                WHERE from_currency = ? AND to_currency = ? AND rate_date = ?
                 """,
                 (from_currency, to_currency, target_date.strftime("%Y-%m-%d")),
-            )
-            row = cursor.fetchone()
+            ).fetchone()
             return float(row[0]) if row else None
-        except psycopg2.Error as e:
+        except duckdb.Error as e:
             logger.error(f"Error getting cached exchange rate: {e}")
             return None
         finally:
-            if conn and not conn.closed:
+            if conn is not None:
                 conn.close()
     
     def get_exchange_rate(self, from_currency: str, to_currency: str = 'EUR', 

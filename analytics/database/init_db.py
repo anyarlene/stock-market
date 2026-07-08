@@ -4,7 +4,7 @@ from analytics.database.db_manager import DatabaseManager
 
 
 def main():
-    """Initialize the PostgreSQL database with tables."""
+    """Initialize the DuckDB warehouse with tables."""
     print("Initializing database...")
     db = DatabaseManager()
     db.initialize_database()

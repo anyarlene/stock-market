@@ -5,7 +5,7 @@ sources:
     description: >
       Raw tables written by the Python ETL pipeline (analytics/etl/).
       These are the system-of-record tables that dbt reads but never writes to.
-    schema: public
+    schema: main
 
     # Source freshness: warn if etf_data hasn't received new rows in 12 h,
     # error if not updated in 24 h. Checked by `dbt source freshness`.

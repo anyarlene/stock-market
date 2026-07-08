@@ -4,12 +4,12 @@ yfinance>=0.2.36
 python-dotenv>=1.0.0
 schedule>=1.2.0
 
-# PostgreSQL driver
-psycopg2-binary>=2.9.9
+# Embedded analytical database (single-file warehouse)
+duckdb>=1.0.0
 
 # dbt
 dbt-core>=1.8.0
-dbt-postgres>=1.8.0
+dbt-duckdb>=1.8.0
 
 # Data visualization (legacy / optional)
 matplotlib>=3.7.0
