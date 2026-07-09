@@ -85,7 +85,12 @@ def load_data():
         price = con.execute("SELECT * FROM mart_price_history").df()
         metrics = con.execute("SELECT * FROM mart_52week_metrics").df()
         thresholds = con.execute("SELECT * FROM mart_entry_thresholds").df()
-        fx = con.execute("SELECT * FROM mart_fx_rates").df()
+        # mart_fx_rates is newer: tolerate a published warehouse that predates it
+        # (the app derives implied rates from price history as a fallback).
+        try:
+            fx = con.execute("SELECT * FROM mart_fx_rates").df()
+        except duckdb.Error:
+            fx = pd.DataFrame(columns=["from_currency", "to_currency", "rate_date", "exchange_rate"])
     finally:
         con.close()
     price["date"] = pd.to_datetime(price["date"])
@@ -95,14 +100,27 @@ def load_data():
 # ---------------------------------------------------------------------------
 # Currency conversion (EUR pivot / triangulation)
 # ---------------------------------------------------------------------------
-def build_rate_to_eur(fx: pd.DataFrame) -> dict:
-    """Latest <ccy>→EUR rate per source currency, plus EUR→EUR = 1."""
+def build_rate_to_eur(fx: pd.DataFrame, price: pd.DataFrame):
+    """Latest <ccy>→EUR rate per source currency, plus EUR→EUR = 1.
+
+    Returns (rates, fx_available). If mart_fx_rates is missing from the published
+    warehouse (e.g. a stale release built before that model existed), fall back to
+    the implied rate from price history (close_eur / close) so the dashboard keeps
+    working until the pipeline republishes.
+    """
     rates = {"EUR": 1.0}
-    if not fx.empty:
+    if fx is not None and not fx.empty:
         latest = fx.sort_values("rate_date").groupby("from_currency").tail(1)
         for _, r in latest.iterrows():
             rates[r["from_currency"]] = float(r["exchange_rate"])
-    return rates
+        return rates, True
+    # Fallback: derive implied <ccy>→EUR from price history's EUR columns
+    sub = price.dropna(subset=["close", "close_eur"])
+    for ccy in sub["native_currency"].unique():
+        rows = sub[sub["native_currency"] == ccy].sort_values("date")
+        if not rows.empty and rows["close"].iloc[-1]:
+            rates[ccy] = float(rows["close_eur"].iloc[-1]) / float(rows["close"].iloc[-1])
+    return rates, False
 
 
 def convert(value, src_ccy, tgt_ccy, rate_to_eur) -> float:
@@ -168,7 +186,7 @@ except Exception as exc:  # pragma: no cover - surfaced in the UI
 tickers = [t for t in ORDER if t in set(price_df["ticker"])]
 metrics_by_ticker = {r["ticker"]: r for _, r in metrics_df.iterrows()}
 native_ccy = {t: metrics_by_ticker[t]["native_currency"] for t in tickers if t in metrics_by_ticker}
-rate_to_eur = build_rate_to_eur(fx_df)
+rate_to_eur, fx_available = build_rate_to_eur(fx_df, price_df)
 last_updated = pd.to_datetime(price_df["date"]).max()
 data_min = pd.to_datetime(price_df["date"]).min().date()
 data_max = last_updated.date()
@@ -392,7 +410,8 @@ with right:
 # Footer
 # ---------------------------------------------------------------------------
 st.markdown("")
+fx_note = "" if fx_available else " FX rates table not found in the published data — using rates implied from price history (re-run the pipeline to refresh)."
 st.caption(
     f"Values shown in {currency}. Cross-currency figures use EUR as a pivot (latest FX rate). "
-    f"Data as of {last_updated:%b %d, %Y}."
+    f"Data as of {last_updated:%b %d, %Y}.{fx_note}"
 )
