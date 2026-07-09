@@ -1,10 +1,10 @@
-# ETF Analytics — End-to-End Data Engineering Pipeline
+# imbuto
 
-A cost-free, fully cloud-run Data Engineering project tracking 5 ETFs (VOO, VTI, QQQ, VUAA.L, CNDX.L).
-It runs a complete **ELT** pipeline — from raw market data to a public dashboard — with no database
-server and no local machine involvement.
+A cost-free, fully cloud-run **ETF Analytics** Data Engineering project tracking 5 ETFs
+(VOO, VTI, QQQ, VUAA.L, CNDX.L). It runs a complete **ELT** pipeline — from raw market data to a
+public dashboard — with no database server and no local machine involvement.
 
-> **Live dashboard:** _add your Streamlit Community Cloud URL here_
+> **Live dashboard:** https://imbuto.streamlit.app/
 >
 > **Design & roadmap:** [`analytics/docs/stock-market-v2-reporting-layer.md`](analytics/docs/stock-market-v2-reporting-layer.md) is the single source of truth for the architecture direction.
 
@@ -139,7 +139,7 @@ After a one-time Streamlit Cloud deploy, the dashboard refreshes daily on its ow
 ## Project Structure
 
 ```
-stock-market/
+imbuto/
 ├── analytics/
 │   ├── enhanced_workflow.py        ETL orchestrator (used by GitHub Actions)
 │   ├── database/                   schema (DuckDB), DB manager, symbol loader, init

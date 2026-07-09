@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "stock-market"
+name = "imbuto"
 version = "0.1.0"
 description = "ETF analytics and visualization tool"
 readme = "README.md"
