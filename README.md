@@ -1,8 +1,8 @@
 # imbuto
 
-A cost-free, fully cloud-run **ETF Analytics** Data Engineering project tracking 5 ETFs
-(VOO, VTI, QQQ, VUAA.L, CNDX.L). It runs a complete **ELT** pipeline — from raw market data to a
-public dashboard — with no database server and no local machine involvement.
+An automated **ELT** pipeline for ETF analytics: Python extracts market data into a DuckDB
+warehouse, dbt transforms it into analytics-ready marts, and a Streamlit app serves a public
+dashboard.
 
 > **Live dashboard:** https://imbuto.streamlit.app/
 >
@@ -39,9 +39,6 @@ public dashboard — with no database server and no local machine involvement.
                               └───────────────────────────────┘
 ```
 
-This is **ELT**, not ETL: Python **E**xtracts from Yahoo Finance and **L**oads raw rows into DuckDB;
-dbt then **T**ransforms them into the marts the dashboard reads.
-
 ---
 
 ## Tech Stack
@@ -54,8 +51,6 @@ dbt then **T**ransforms them into the marts the dashboard reads.
 | **Orchestration / CI** | GitHub Actions | Daily pipeline + tests on every push/PR |
 | **Data distribution** | GitHub Releases | `warehouse.duckdb` published under the `latest-data` tag |
 | **Dashboard** | Streamlit + Plotly | Public dashboard on Streamlit Community Cloud |
-
-No component has a server, a trial period, or usage-based billing.
 
 ---
 
@@ -158,6 +153,7 @@ imbuto/
 ├── dashboard/
 │   ├── app.py                      Streamlit dashboard (reads DuckDB marts)
 │   ├── requirements.txt            Streamlit Cloud dependencies
+│   ├── assets/logo.png             app logo
 │   └── .streamlit/config.toml      dark theme
 │
 ├── .github/workflows/

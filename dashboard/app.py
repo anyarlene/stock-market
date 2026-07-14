@@ -14,6 +14,7 @@ Currency: values are converted via EUR as a pivot (triangulation) so any of
 EUR / USD / GBP can be displayed for every ETF.
 """
 
+import base64
 import os
 import tempfile
 from datetime import timedelta
@@ -47,7 +48,23 @@ UP = "#22c55e"
 DOWN = "#ef4444"
 RANGE_DAYS = {"1M": 30, "3M": 91, "1Y": 365, "2Y": 730, "ALL": None}
 
-st.set_page_config(page_title="ETF Analytics Dashboard", page_icon="📈", layout="wide")
+LOGO_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "logo.png")
+
+
+def _logo_data_uri() -> str:
+    if not os.path.exists(LOGO_PATH):
+        return ""
+    with open(LOGO_PATH, "rb") as fh:
+        return "data:image/png;base64," + base64.b64encode(fh.read()).decode()
+
+
+LOGO_URI = _logo_data_uri()
+
+st.set_page_config(
+    page_title="ETF Analytics Dashboard",
+    page_icon=LOGO_PATH if os.path.exists(LOGO_PATH) else "📈",
+    layout="wide",
+)
 
 
 # ---------------------------------------------------------------------------
@@ -151,6 +168,7 @@ st.markdown(
       }
       #MainMenu, footer {visibility: hidden;}
       .app-header {line-height: 1.25;}
+      .app-logo {height: 2rem; width: 2rem; vertical-align: -0.35rem; margin-right: 10px; border-radius: 6px;}
       .app-title {font-size: 1.9rem; font-weight: 800;}
       .app-sub {color: #94a3b8; font-size: 0.95rem;}
       .app-meta {color: #94a3b8; font-size: 0.85rem; text-align: right; margin-top: 6px;}
@@ -197,9 +215,10 @@ data_max = last_updated.date()
 # ---------------------------------------------------------------------------
 h_left, h_right = st.columns([3, 1])
 with h_left:
+    logo_html = f'<img src="{LOGO_URI}" class="app-logo" alt="imbuto logo">' if LOGO_URI else "📈 "
     st.markdown(
         '<div class="app-header">'
-        '<span class="app-title">📈 ETF Analytics Dashboard</span><br>'
+        f'<span class="app-title">{logo_html}ETF Analytics Dashboard</span><br>'
         '<span class="app-sub">ETF performance overview &amp; entry-point analysis</span>'
         "</div>",
         unsafe_allow_html=True,
@@ -410,8 +429,7 @@ with right:
 # Footer
 # ---------------------------------------------------------------------------
 st.markdown("")
-fx_note = "" if fx_available else " FX rates table not found in the published data — using rates implied from price history (re-run the pipeline to refresh)."
 st.caption(
     f"Values shown in {currency}. Cross-currency figures use EUR as a pivot (latest FX rate). "
-    f"Data as of {last_updated:%b %d, %Y}.{fx_note}"
+    "Source: Yahoo Finance (yfinance)."
 )

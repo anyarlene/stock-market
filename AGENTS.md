@@ -21,6 +21,7 @@ This repo is an ETF data-engineering pipeline: **Python ETL (yfinance) → DuckD
 - Run locally from `dashboard/`: `/workspace/.venv/bin/streamlit run app.py` (install its deps with `pip install -r dashboard/requirements.txt` if needed). It reads marts from the DuckDB warehouse.
 - Data resolution order: `$DUCKDB_PATH` → a local `warehouse.duckdb` in the repo (dev) → the published `latest-data` GitHub Release asset (`$WAREHOUSE_URL`). So locally it "just works" if `warehouse.duckdb` exists; in production (Streamlit Community Cloud) it downloads the Release asset.
 - `dashboard/` has its own `requirements.txt` for Streamlit Cloud; it is separate from the pipeline's root `requirements.txt`.
+- If the downloaded warehouse predates a newly added mart (e.g. a stale `latest-data` release without `mart_fx_rates`), the app degrades gracefully — it derives implied FX rates from price history instead of crashing. Re-run the pipeline to refresh the published warehouse.
 
 ### Tests / lint
 - CI health check (see `.github/workflows/test_automation.yml`): `PYTHONPATH=. .venv/bin/python analytics/test_enhanced_workflow.py`. No DB server needed — it creates/uses the DuckDB file.
